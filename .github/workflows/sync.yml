@@ -1,0 +1,26 @@
+name: Sync Trade Republic to Google Sheets
+
+on:
+  push:
+    paths:
+      - 'data/transactions.csv'
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Sincronizza con Google Sheets
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python scripts/sync_to_sheets.py
