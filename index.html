@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Portafoglio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0c0f;
+    --bg-panel: #12151a;
+    --bg-panel-raised: #171b21;
+    --line: #23282f;
+    --ink: #e9e7e1;
+    --ink-dim: #8b92a0;
+    --ink-faint: #565d69;
+    --amber: #e0a339;
+    --amber-dim: #7a5a24;
+    --teal: #35c9a5;
+    --rose: #e2685f;
+    --stock: #e0a339;
+    --etf: #4fa8d8;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(224,163,57,0.07), transparent),
+      radial-gradient(ellipse 700px 400px at 100% 10%, rgba(79,168,216,0.05), transparent);
+    color: var(--ink);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 28px 20px 80px;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; }
+
+  /* ---------- HEADER ---------- */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 9px;
+    background: linear-gradient(155deg, var(--amber), #a97220);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 700; font-size: 15px; color: #14110a;
+    flex-shrink: 0;
+  }
+  .brand-text .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    color: var(--ink-faint); text-transform: uppercase;
+  }
+  .brand-text h1 { margin: 2px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+
+  .clock {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+    text-align: right;
+  }
+  .clock .status {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--teal); margin-bottom: 4px;
+  }
+  .status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+
+  /* ---------- HERO TOTALE ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+
+  .hero-total .label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    color: var(--ink-faint); text-transform: uppercase; margin-bottom: 10px;
+  }
+  .hero-total .value {
+    font-family: var(--mono); font-size: 42px; font-weight: 600;
+    letter-spacing: -0.02em; color: var(--ink);
+  }
+  .hero-total .value .cents { color: var(--ink-dim); font-size: 26px; }
+  .hero-total .sub {
+    margin-top: 10px; font-size: 13px; color: var(--ink-dim);
+    font-family: var(--mono);
+  }
+
+  .hero-import {
+    display: flex; flex-direction: column; justify-content: center;
+    border-style: dashed;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    text-align: center;
+    position: relative;
+  }
+  .hero-import:hover, .hero-import.drag { border-color: var(--amber); background: rgba(224,163,57,0.04); }
+  .hero-import .icon {
+    font-family: var(--mono); font-size: 20px; color: var(--amber); margin-bottom: 6px;
+  }
+  .hero-import .t1 { font-weight: 600; font-size: 14px; }
+  .hero-import .t2 { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+  .hero-import input { display: none; }
+
+  /* ---------- SEZIONE STRUMENTI ---------- */
+  .section-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .section-head h2 {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-dim); margin: 0;
+  }
+  .section-head .count { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover { border-color: #333a44; transform: translateY(-1px); }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .card-name { font-weight: 700; font-size: 15px; line-height: 1.25; }
+  .badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    padding: 3px 7px; border-radius: 5px; text-transform: uppercase;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .badge.stock { color: var(--stock); background: rgba(224,163,57,0.12); border: 1px solid rgba(224,163,57,0.3); }
+  .badge.etf { color: var(--etf); background: rgba(79,168,216,0.12); border: 1px solid rgba(79,168,216,0.3); }
+
+  .card-mid { display: flex; align-items: center; gap: 14px; }
+  .ring { flex-shrink: 0; }
+  .ring text { font-family: var(--mono); }
+
+  .card-stats { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+  .stat .k { font-size: 10px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat .v { font-family: var(--mono); font-size: 13px; margin-top: 2px; }
+
+  .card-bottom {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 12px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+  }
+  .card-bottom .invested { color: var(--ink); font-weight: 600; }
+
+  /* ---------- STATI ---------- */
+  .state-msg {
+    text-align: center; padding: 60px 20px; color: var(--ink-faint);
+    font-family: var(--mono); font-size: 13px;
+  }
+  .state-msg.error { color: var(--rose); }
+  .spinner {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--line); border-top-color: var(--amber);
+    animation: spin .8s linear infinite; margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-panel-raised); border: 1px solid var(--line);
+    padding: 12px 20px; border-radius: 10px; font-size: 13px;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
+    font-family: var(--mono);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok { border-color: rgba(53,201,165,0.4); color: var(--teal); }
+  .toast.err { border-color: rgba(226,104,95,0.4); color: var(--rose); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="brand-mark">TR</div>
+        <div class="brand-text">
+          <div class="eyebrow">Portfolio Ledger</div>
+          <h1>Il tuo portafoglio</h1>
+        </div>
+      </div>
+      <div class="clock">
+        <div class="status"><span class="dot"></span>connesso</div>
+        <div id="ultimoAggiornamento">—</div>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="panel hero-total">
+        <div class="label">Totale investito</div>
+        <div class="value" id="totaleInvestito">— <span class="cents">€</span></div>
+        <div class="sub" id="numStrumenti">caricamento…</div>
+      </div>
+      <div class="panel hero-import" id="dropZone">
+        <div class="icon">↓</div>
+        <div class="t1">Importa nuovo export</div>
+        <div class="t2">Trascina qui il CSV di Trade Republic, o clicca</div>
+        <input type="file" id="fileInput" accept=".csv">
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Strumenti in portafoglio</h2>
+      <span class="count" id="countLabel"></span>
+    </div>
+
+    <div id="content">
+      <div class="state-msg"><div class="spinner"></div>Carico i dati dal foglio…</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = 'tr_dashboard_config';
+
+  function getConfig() {
+    let cfg = null;
+    try { cfg = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) {}
+    if (!cfg || !cfg.url || !cfg.token) {
+      const url = prompt('Incolla l\'URL della Web App di Apps Script (finisce con /exec):');
+      const token = prompt('Incolla il token segreto (SECRET_TOKEN dello script):');
+      if (!url || !token) { document.body.innerHTML = '<div class="state-msg error">Configurazione mancante. Ricarica la pagina per riprovare.</div>'; throw new Error('no config'); }
+      cfg = { url: url.trim(), token: token.trim() };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    }
+    return cfg;
+  }
+
+  function fmtEUR(n) {
+    return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+  }
+
+  function ringSVG(pct, colorVar) {
+    const r = 26, c = 2 * Math.PI * r;
+    const filled = Math.max(0, Math.min(1, pct)) * c;
+    return `
+      <svg class="ring" width="64" height="64" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/>
+        <circle cx="32" cy="32" r="${r}" fill="none" stroke="${colorVar}" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="${filled} ${c}"
+          transform="rotate(-90 32 32)"/>
+        <text x="32" y="37" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">${Math.round(pct*100)}%</text>
+      </svg>`;
+  }
+
+  function showToast(msg, ok) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (ok ? 'ok' : 'err');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  async function loadData() {
+    const cfg = getConfig();
+    const content = document.getElementById('content');
+    try {
+      const res = await fetch(`${cfg.url}?token=${encodeURIComponent(cfg.token)}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      render(data);
+    } catch (err) {
+      content.innerHTML = `<div class="state-msg error">Errore nel caricamento: ${err.message}<br><br>Controlla URL e token (li puoi ripristinare svuotando la memoria del browser per questa pagina).</div>`;
+    }
+  }
+
+  function render(data) {
+    document.getElementById('totaleInvestito').innerHTML = `${fmtEUR(data.totale)} <span class="cents">€</span>`;
+    document.getElementById('numStrumenti').textContent = `${data.strumenti.length} strumenti in portafoglio`;
+    document.getElementById('countLabel').textContent = `${data.strumenti.length} posizioni`;
+    document.getElementById('ultimoAggiornamento').textContent = new Date().toLocaleTimeString('it-IT');
+
+    const ordinati = [...data.strumenti].sort((a, b) => b.investito - a.investito);
+    const content = document.getElementById('content');
+
+    if (ordinati.length === 0) {
+      content.innerHTML = `<div class="state-msg">Nessuno strumento ancora. Importa un CSV per iniziare.</div>`;
+      return;
+    }
+
+    content.innerHTML = `<div class="grid">${ordinati.map(cardHTML).join('')}</div>`;
+  }
+
+  function cardHTML(s) {
+    const isStock = s.tipo === 'AZIONI';
+    const colorVar = isStock ? 'var(--stock)' : 'var(--etf)';
+    return `
+      <div class="card">
+        <div class="card-top">
+          <div class="card-name">${s.strumento}</div>
+          <span class="badge ${isStock ? 'stock' : 'etf'}">${s.tipo}</span>
+        </div>
+        <div class="card-mid">
+          ${ringSVG(s.pctPortfolio, colorVar)}
+          <div class="card-stats">
+            <div class="stat"><div class="k">Quantità</div><div class="v">${Number(s.quantita).toLocaleString('it-IT', {maximumFractionDigits: 4})}</div></div>
+            <div class="stat"><div class="k">Prezzo medio</div><div class="v">${s.prezzoMedio ? fmtEUR(s.prezzoMedio) + ' €' : '—'}</div></div>
+            <div class="stat"><div class="k">Operazioni</div><div class="v">${s.nOperazioni}</div></div>
+            <div class="stat"><div class="k">Commissioni</div><div class="v">${fmtEUR(s.commissioni)} €</div></div>
+          </div>
+        </div>
+        <div class="card-bottom">
+          <span>Investito</span>
+          <span class="invested">${fmtEUR(s.investito)} €</span>
+        </div>
+      </div>`;
+  }
+
+  async function importCSV(file) {
+    const cfg = getConfig();
+    const text = await file.text();
+    showToast('Importazione in corso…', true);
+    try {
+      const res = await fetch(cfg.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ token: cfg.token, csv: text })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showToast(`Importate ${data.righe} righe`, true);
+      loadData();
+    } catch (err) {
+      showToast('Errore: ' + err.message, false);
+    }
+  }
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => { if (e.target.files[0]) importCSV(e.target.files[0]); });
+  ['dragover', 'dragenter'].forEach(ev => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('drag'); }));
+  dropZone.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) importCSV(f); });
+
+  loadData();
+</script>
+</body>
+</html>
