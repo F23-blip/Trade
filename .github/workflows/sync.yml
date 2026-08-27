@@ -11,16 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Installa dipendenze
-        run: pip install -r requirements.txt
-
-      - name: Sincronizza con Google Sheets
+      - name: Invia il CSV al foglio
         env:
-          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-        run: python scripts/sync_to_sheets.py
+          WEBAPP_URL: ${{ secrets.WEBAPP_URL }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, urllib.request
+          csv = open("data/transactions.csv").read()
+          payload = json.dumps({"token": os.environ["SYNC_TOKEN"], "csv": csv}).encode()
+          req = urllib.request.Request(os.environ["WEBAPP_URL"], data=payload, headers={"Content-Type": "application/json"})
+          with urllib.request.urlopen(req) as resp:
+              print(resp.read().decode())
+          EOF
