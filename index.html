@@ -203,6 +203,63 @@
     border-bottom: 1px solid var(--line);
   }
   ul.righe li:last-child { border-bottom: none; }
+  ul.righe li.cliccabile { cursor: pointer; }
+  ul.righe li.cliccabile:hover .riga-nome .nome { color: var(--gold); }
+  ul.righe li:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  .riga-chevron {
+    color: var(--muted);
+    flex: none;
+    display: flex;
+    transition: transform 0.25s ease;
+  }
+  li.aperta .riga-chevron { transform: rotate(90deg); color: var(--gold); }
+  @media (prefers-reduced-motion: reduce) {
+    .riga-chevron { transition: none; }
+  }
+
+  .dettagli {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease;
+  }
+  li.aperta .dettagli { grid-template-rows: 1fr; }
+  @media (prefers-reduced-motion: reduce) {
+    .dettagli { transition: none; }
+  }
+  .dettagli-inner { overflow: hidden; }
+  .dettagli ul {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 10px 0 0;
+    border-top: 1px dashed var(--line);
+  }
+  .op {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    padding: 5px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .op .op-data { color: var(--muted); flex: none; }
+  .op .op-tipo {
+    flex: none;
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+  }
+  .op .op-tipo.buy { background: rgba(47,163,107,0.16); color: var(--gain); }
+  .op .op-tipo.sell { background: rgba(193,68,61,0.16); color: var(--err); }
+  .op .op-mid { color: var(--text); flex: 1; text-align: right; }
+  .op .op-importo { flex: none; min-width: 70px; text-align: right; }
+  .op-vuoto { color: var(--muted); font-size: 12px; padding: 6px 0; }
 
   .riga-top {
     display: flex;
@@ -560,10 +617,18 @@
       requestAnimationFrame(() => { seg.style.width = Math.max(pct, 0.6) + '%'; });
 
       // riga
+      const operazioni = Array.isArray(r.operazioni) ? r.operazioni : [];
       const li = document.createElement('li');
+      li.className = 'cliccabile';
+      li.tabIndex = 0;
+      li.setAttribute('role', 'button');
+      li.setAttribute('aria-expanded', 'false');
       li.innerHTML = `
         <div class="riga-top">
           <div class="riga-nome">
+            <span class="riga-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
+            </span>
             <span class="tag ${t === 'AZIONI' ? 'azioni' : 'etf'}">${t === 'AZIONI' ? 'AZ' : 'ETF'}</span>
             <span class="nome">${r.strumento || '—'}</span>
           </div>
@@ -574,13 +639,42 @@
         </div>
         <div class="riga-bar"><span style="background:${colore}"></span></div>
         <div class="riga-meta">${r.nOp || 0} op · qty ${Number(r.quantita || 0).toLocaleString('it-IT', { maximumFractionDigits: 4 })} · pmz ${formatEuro(r.prezzoMedio)}</div>
+        <div class="dettagli"><div class="dettagli-inner"><ul>${renderOperazioni(operazioni)}</ul></div></div>
       `;
+      li.addEventListener('click', () => toggleRiga(li));
+      li.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRiga(li); }
+      });
       els.righe.appendChild(li);
       requestAnimationFrame(() => {
         const bar = li.querySelector('.riga-bar span');
         bar.style.width = Math.min(pct, 100) + '%';
       });
     });
+  }
+
+  function toggleRiga(li) {
+    const aperta = li.classList.toggle('aperta');
+    li.setAttribute('aria-expanded', aperta ? 'true' : 'false');
+  }
+
+  function renderOperazioni(operazioni) {
+    if (!operazioni.length) return '<li class="op-vuoto">Nessuna operazione trovata.</li>';
+    return operazioni.map(op => {
+      const data = new Date(op.data);
+      const dataFmt = isNaN(data) ? op.data : data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const tipoClasse = op.tipo === 'SELL' ? 'sell' : 'buy';
+      const qty = Number(op.quantita || 0).toLocaleString('it-IT', { maximumFractionDigits: 4 });
+      const prezzo = formatEuro(op.prezzo);
+      const importo = formatEuro(op.importo);
+      return `
+        <li class="op">
+          <span class="op-data">${dataFmt}</span>
+          <span class="op-tipo ${tipoClasse}">${op.tipo}</span>
+          <span class="op-mid">${qty} @ ${prezzo}</span>
+          <span class="op-importo">${importo}</span>
+        </li>`;
+    }).join('');
   }
 
   async function chiamaAppsScript(metodo, body) {
