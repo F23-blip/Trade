@@ -1,11 +1,17 @@
-// Service worker minimo — serve solo a rendere la pagina "installabile"
-// su Android/Chrome e a farla aprire subito anche con rete instabile.
-// Non mette MAI in cache le chiamate verso Apps Script: i dati del
-// portafoglio devono sempre essere quelli freschi (o la copia in
-// localStorage gestita da index.html), mai una versione vecchia dalla
-// cache del service worker.
+ // Service worker — rende la pagina "installabile" su Android/Chrome e
+// disponibile anche offline. Non mette MAI in cache le chiamate verso
+// Apps Script: i dati del portafoglio devono sempre essere quelli freschi
+// (o la copia in localStorage gestita da index.html), mai una versione
+// vecchia dalla cache del service worker.
+//
+// IMPORTANTE: ogni volta che cambi index.html in modo sostanziale, cambia
+// anche CACHE_NAME qui sotto (es. v2 -> v3). È quello che fa scattare
+// l'aggiornamento del service worker nei browser/app già installate —
+// altrimenti l'app resta "congelata" sulla versione con cui è stata
+// installata, anche disinstallando e reinstallando l'icona (l'icona è
+// solo una scorciatoia, la cache resta legata al sito, non a quella).
 
-const CACHE_NAME = 'portafoglio-tr-v1';
+const CACHE_NAME = 'portafoglio-tr-v2';
 const FILE_DA_CACHARE = [
   './',
   './index.html',
@@ -33,14 +39,30 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Mai intercettare le chiamate ad Apps Script (script.google.com):
-  // devono sempre andare in rete, dati sempre freschi.
+  // Mai intercettare le chiamate ad Apps Script: sempre in rete, dati freschi.
   if (url.hostname.includes('script.google.com') || url.hostname.includes('script.googleusercontent.com')) {
     return;
   }
 
-  // Per tutto il resto (la pagina stessa, manifest, icone): cache-first,
-  // con fallback alla rete se manca in cache.
+  const richiestaHTML = event.request.mode === 'navigate' ||
+    (event.request.headers.get('accept') || '').includes('text/html');
+
+  if (richiestaHTML) {
+    // Network-first: prova sempre a prendere l'ultima versione online;
+    // se non c'è rete, usa la copia salvata (per l'uso offline).
+    event.respondWith(
+      fetch(event.request)
+        .then((risposta) => {
+          const copia = risposta.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copia));
+          return risposta;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Asset statici (manifest, icone): cache-first, con fallback alla rete.
   event.respondWith(
     caches.match(event.request).then((risposta) => risposta || fetch(event.request))
   );
