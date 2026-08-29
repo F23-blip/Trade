@@ -7,9 +7,9 @@
 
 <!-- PWA: manifest, icone, comportamento "app" su iOS/Android -->
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0B1220">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -364,6 +364,41 @@
     border-radius: var(--radius);
   }
 
+  /* ---- movimenti di liquidità ---- */
+  .movimenti-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .movimento {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 13px;
+  }
+  .movimento .m-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .movimento .m-valore {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .movimento .m-valore.positivo { color: var(--gain); }
+  .movimento .m-valore.negativo { color: var(--err); }
+  .movimento .m-conteggio {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
   /* ---- modale impostazioni ---- */
   .overlay {
     position: fixed;
@@ -487,6 +522,11 @@
   <div class="vuoto" id="vuoto">
     Nessun dato ancora. Carica il primo estratto per vedere il portafoglio.
   </div>
+
+  <div class="movimenti-wrap" id="movimentiWrap" style="display:none;">
+    <div class="ribbon-label" style="margin-top:28px;"><span>MOVIMENTI DI LIQUIDITÀ</span></div>
+    <div class="movimenti-grid" id="movimentiGrid"></div>
+  </div>
 </main>
 
 <div class="overlay" id="overlay">
@@ -527,6 +567,8 @@
     totaleValore: document.getElementById('totaleValore'),
     righe: document.getElementById('righe'),
     vuoto: document.getElementById('vuoto'),
+    movimentiWrap: document.getElementById('movimentiWrap'),
+    movimentiGrid: document.getElementById('movimentiGrid'),
     overlay: document.getElementById('overlay'),
     btnImpostazioni: document.getElementById('btnImpostazioni'),
     btnAnnulla: document.getElementById('btnAnnulla'),
@@ -582,6 +624,34 @@
     const hue = baseHue - spread / 2 + step * indice;
     const light = t === 'AZIONI' ? 58 : 46;
     return `hsl(${hue.toFixed(0)}, 55%, ${light}%)`;
+  }
+
+  const ETICHETTE_MOVIMENTI = {
+    TRANSFER_INBOUND: 'Bonifici in entrata',
+    DIVIDEND: 'Dividendi',
+    INTEREST_PAYMENT: 'Interessi',
+    TAX_OPTIMIZATION: 'Bolli / Imposte'
+  };
+
+  function renderMovimenti(movimenti) {
+    const lista = Array.isArray(movimenti) ? movimenti : [];
+    const conTotali = lista.filter(m => m.conteggio > 0);
+    if (conTotali.length === 0) {
+      els.movimentiWrap.style.display = 'none';
+      return;
+    }
+    els.movimentiWrap.style.display = 'block';
+    els.movimentiGrid.innerHTML = lista.map(m => {
+      const totale = Number(m.totale) || 0;
+      const classeSegno = totale > 0 ? 'positivo' : (totale < 0 ? 'negativo' : '');
+      const segno = totale > 0 ? '+' : '';
+      return `
+        <div class="movimento">
+          <div class="m-label">${ETICHETTE_MOVIMENTI[m.tipo] || m.tipo}</div>
+          <div class="m-valore ${classeSegno}">${segno}${formatEuro(totale)}</div>
+          <div class="m-conteggio">${m.conteggio} mov.</div>
+        </div>`;
+    }).join('');
   }
 
   function render(riepilogo) {
@@ -706,9 +776,9 @@
     return res.json();
   }
 
-  function salvaCache(riepilogo) {
+  function salvaCache(riepilogo, movimentiCash) {
     try {
-      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, ts: Date.now() }));
+      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, movimentiCash, ts: Date.now() }));
     } catch (err) { /* storage pieno o non disponibile: non blocca nulla */ }
   }
 
@@ -731,7 +801,8 @@
       }
       nascondiStato();
       render(risp.riepilogo);
-      salvaCache(risp.riepilogo);
+      renderMovimenti(risp.movimentiCash);
+      salvaCache(risp.riepilogo, risp.movimentiCash);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       // In sottofondo non mostriamo errore: resta visibile quanto già in cache.
@@ -751,7 +822,8 @@
       const n = risp.righe || 0;
       mostraStato(n > 0 ? `Importate ${n} righe nuove.` : 'Nessuna riga nuova: già tutto aggiornato.', 'ok');
       render(risp.riepilogo);
-      salvaCache(risp.riepilogo);
+      renderMovimenti(risp.movimentiCash);
+      salvaCache(risp.riepilogo, risp.movimentiCash);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       mostraStato(String(err.message || err), 'errore');
@@ -772,6 +844,7 @@
     const cache = leggiCache();
     if (cache && cache.riepilogo) {
       render(cache.riepilogo);
+      renderMovimenti(cache.movimentiCash);
       const minutiFa = Math.round((Date.now() - cache.ts) / 60000);
       els.sottotitolo.textContent = minutiFa < 1 ? 'Aggiornato ora' : `Aggiornato ${minutiFa} min fa`;
       caricaRiepilogo(true); // refresh silenzioso
