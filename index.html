@@ -3,367 +3,644 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ledger — Portafoglio</title>
+<title>Portafoglio · TradeRepublic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
-
   :root {
-    --bg: #0a0c0f;
-    --bg-panel: #12151a;
-    --bg-panel-raised: #171b21;
-    --line: #23282f;
-    --ink: #e9e7e1;
-    --ink-dim: #8b92a0;
-    --ink-faint: #565d69;
-    --amber: #e0a339;
-    --amber-dim: #7a5a24;
-    --teal: #35c9a5;
-    --rose: #e2685f;
-    --stock: #e0a339;
-    --etf: #4fa8d8;
-    --mono: 'IBM Plex Mono', ui-monospace, monospace;
-    --sans: 'Inter', -apple-system, sans-serif;
+    --bg: #0B1220;
+    --panel: #121B2E;
+    --panel-2: #17223A;
+    --line: #263455;
+    --text: #ECE7DA;
+    --muted: #8B93A7;
+    --gain: #2FA36B;
+    --gold: #C9A24B;
+    --err: #C1443D;
+    --radius: 14px;
   }
 
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
   body {
-    background: var(--bg);
-    background-image:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(224,163,57,0.07), transparent),
-      radial-gradient(ellipse 700px 400px at 100% 10%, rgba(79,168,216,0.05), transparent);
-    color: var(--ink);
-    font-family: var(--sans);
     min-height: 100vh;
-    padding: 28px 20px 80px;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 64px;
   }
 
-  .wrap { max-width: 1100px; margin: 0 auto; }
+  main {
+    width: 100%;
+    max-width: 480px;
+  }
 
-  /* ---------- HEADER ---------- */
-  header {
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .eyebrow .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gain);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 24px;
+  }
+
+  button.icon-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  button.icon-btn:hover { color: var(--text); border-color: var(--gold); }
+
+  .topbar {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 28px;
+    align-items: flex-start;
   }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .brand-mark {
-    width: 38px; height: 38px; border-radius: 9px;
-    background: linear-gradient(155deg, var(--amber), #a97220);
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono); font-weight: 700; font-size: 15px; color: #14110a;
-    flex-shrink: 0;
-  }
-  .brand-text .eyebrow {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
-    color: var(--ink-faint); text-transform: uppercase;
-  }
-  .brand-text h1 { margin: 2px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
 
-  .clock {
-    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+  /* ---- dropzone ---- */
+  .dropzone {
+    position: relative;
+    border: 1.5px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .dropzone:hover, .dropzone:focus-within { border-color: var(--gold); background: var(--panel-2); }
+  .dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .dropzone .ticket-mark {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 10px;
+    background: var(--panel-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+  }
+  .dropzone .label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .dropzone .hint {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-top: 2px;
+  }
+
+  /* ---- ribbon ---- */
+  .ribbon-wrap { margin-top: 22px; }
+  .ribbon-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .ribbon {
+    display: flex;
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .ribbon .seg {
+    height: 100%;
+    width: 0%;
+    transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ribbon .seg { transition: none; }
+  }
+
+  /* ---- totale ---- */
+  .totale {
+    margin-top: 26px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+  .totale .k {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .totale .v {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+  }
+
+  /* ---- righe portfolio ---- */
+  ul.righe {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.righe li {
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ul.righe li:last-child { border-bottom: none; }
+
+  .riga-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .riga-nome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .riga-nome .nome {
+    font-weight: 500;
+    font-size: 14.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 5px;
+    flex: none;
+  }
+  .tag.azioni { background: rgba(201,162,75,0.16); color: var(--gold); }
+  .tag.etf { background: rgba(47,163,107,0.16); color: var(--gain); }
+
+  .riga-numeri {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    font-family: 'IBM Plex Mono', monospace;
+    flex: none;
+  }
+  .riga-numeri .investito {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .riga-numeri .pct {
+    font-size: 12.5px;
+    color: var(--muted);
+    min-width: 42px;
     text-align: right;
   }
-  .clock .status {
-    display: inline-flex; align-items: center; gap: 6px;
-    color: var(--teal); margin-bottom: 4px;
-  }
-  .status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
 
-  /* ---------- HERO TOTALE ---------- */
-  .hero {
-    display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
+  .riga-bar {
+    margin-top: 8px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--panel);
+    overflow: hidden;
   }
-  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } }
-
-  .panel {
-    background: var(--bg-panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 22px 24px;
+  .riga-bar span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .riga-bar span { transition: none; }
   }
 
-  .hero-total .label {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
-    color: var(--ink-faint); text-transform: uppercase; margin-bottom: 10px;
-  }
-  .hero-total .value {
-    font-family: var(--mono); font-size: 42px; font-weight: 600;
-    letter-spacing: -0.02em; color: var(--ink);
-  }
-  .hero-total .value .cents { color: var(--ink-dim); font-size: 26px; }
-  .hero-total .sub {
-    margin-top: 10px; font-size: 13px; color: var(--ink-dim);
-    font-family: var(--mono);
+  .riga-meta {
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
   }
 
-  .hero-import {
-    display: flex; flex-direction: column; justify-content: center;
-    border-style: dashed;
-    cursor: pointer;
-    transition: border-color .15s, background .15s;
+  /* ---- stati ---- */
+  .stato {
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--muted);
+    display: none;
+  }
+  .stato.visibile { display: block; }
+  .stato.errore { color: var(--err); }
+  .stato.ok { color: var(--gain); }
+
+  .vuoto {
+    margin-top: 40px;
     text-align: center;
-    position: relative;
+    color: var(--muted);
+    font-size: 13.5px;
+    padding: 20px 10px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
   }
-  .hero-import:hover, .hero-import.drag { border-color: var(--amber); background: rgba(224,163,57,0.04); }
-  .hero-import .icon {
-    font-family: var(--mono); font-size: 20px; color: var(--amber); margin-bottom: 6px;
-  }
-  .hero-import .t1 { font-weight: 600; font-size: 14px; }
-  .hero-import .t2 { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
-  .hero-import input { display: none; }
 
-  /* ---------- SEZIONE STRUMENTI ---------- */
-  .section-head {
-    display: flex; justify-content: space-between; align-items: baseline;
+  /* ---- modale impostazioni ---- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,8,15,0.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .overlay.aperto { display: flex; }
+  .modale {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .modale h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    margin: 0 0 6px;
+  }
+  .modale p {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+  .modale label {
+    font-size: 12px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .modale input[type="text"], .modale input[type="password"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
     margin-bottom: 14px;
   }
-  .section-head h2 {
-    font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--ink-dim); margin: 0;
+  .modale input:focus, .dropzone:focus-within, button:focus-visible, .icon-btn:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
   }
-  .section-head .count { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 14px;
+  .modale-azioni {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
   }
-
-  .card {
-    background: var(--bg-panel);
+  .btn {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 13.5px;
+    padding: 9px 16px;
+    border-radius: 8px;
     border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 18px;
-    display: flex; flex-direction: column; gap: 14px;
-    transition: border-color .15s, transform .15s;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
   }
-  .card:hover { border-color: #333a44; transform: translateY(-1px); }
-
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-  .card-name { font-weight: 700; font-size: 15px; line-height: 1.25; }
-  .badge {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
-    padding: 3px 7px; border-radius: 5px; text-transform: uppercase;
-    white-space: nowrap; flex-shrink: 0;
+  .btn.primario {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #1a1408;
   }
-  .badge.stock { color: var(--stock); background: rgba(224,163,57,0.12); border: 1px solid rgba(224,163,57,0.3); }
-  .badge.etf { color: var(--etf); background: rgba(79,168,216,0.12); border: 1px solid rgba(79,168,216,0.3); }
-
-  .card-mid { display: flex; align-items: center; gap: 14px; }
-  .ring { flex-shrink: 0; }
-  .ring text { font-family: var(--mono); }
-
-  .card-stats { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
-  .stat .k { font-size: 10px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; }
-  .stat .v { font-family: var(--mono); font-size: 13px; margin-top: 2px; }
-
-  .card-bottom {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 12px; border-top: 1px solid var(--line);
-    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
-  }
-  .card-bottom .invested { color: var(--ink); font-weight: 600; }
-
-  /* ---------- STATI ---------- */
-  .state-msg {
-    text-align: center; padding: 60px 20px; color: var(--ink-faint);
-    font-family: var(--mono); font-size: 13px;
-  }
-  .state-msg.error { color: var(--rose); }
-  .spinner {
-    width: 22px; height: 22px; border-radius: 50%;
-    border: 2px solid var(--line); border-top-color: var(--amber);
-    animation: spin .8s linear infinite; margin: 0 auto 14px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: var(--bg-panel-raised); border: 1px solid var(--line);
-    padding: 12px 20px; border-radius: 10px; font-size: 13px;
-    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
-    font-family: var(--mono);
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast.ok { border-color: rgba(53,201,165,0.4); color: var(--teal); }
-  .toast.err { border-color: rgba(226,104,95,0.4); color: var(--rose); }
+  .btn:hover { border-color: var(--gold); }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="brand-mark">TR</div>
-        <div class="brand-text">
-          <div class="eyebrow">Portfolio Ledger</div>
-          <h1>Il tuo portafoglio</h1>
-        </div>
-      </div>
-      <div class="clock">
-        <div class="status"><span class="dot"></span>connesso</div>
-        <div id="ultimoAggiornamento">—</div>
-      </div>
-    </header>
 
-    <div class="hero">
-      <div class="panel hero-total">
-        <div class="label">Totale investito</div>
-        <div class="value" id="totaleInvestito">— <span class="cents">€</span></div>
-        <div class="sub" id="numStrumenti">caricamento…</div>
-      </div>
-      <div class="panel hero-import" id="dropZone">
-        <div class="icon">↓</div>
-        <div class="t1">Importa nuovo export</div>
-        <div class="t2">Trascina qui il CSV di Trade Republic, o clicca</div>
-        <input type="file" id="fileInput" accept=".csv">
-      </div>
+<main>
+  <div class="topbar">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>PORTAFOGLIO · TRADEREPUBLIC</div>
+      <h1>Riepilogo</h1>
+      <p class="sub" id="sottotitolo">Carica l'ultimo estratto per aggiornare</p>
     </div>
-
-    <div class="section-head">
-      <h2>Strumenti in portafoglio</h2>
-      <span class="count" id="countLabel"></span>
-    </div>
-
-    <div id="content">
-      <div class="state-msg"><div class="spinner"></div>Carico i dati dal foglio…</div>
-    </div>
+    <button class="icon-btn" id="btnImpostazioni" aria-label="Impostazioni" title="Impostazioni">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64c.6-.24 1.02-.8 1.04-1.44V3a2 2 0 1 1 4 0v.09c.02.64.44 1.2 1.04 1.44.68.28 1.46.14 1.98-.38l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.52.52-.66 1.3-.38 1.98.24.6.8 1.02 1.44 1.04H21a2 2 0 1 1 0 4h-.09c-.64.02-1.2.44-1.44 1.04Z"/>
+      </svg>
+    </button>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <label class="dropzone" for="fileInput">
+    <input type="file" id="fileInput" accept=".csv,text/csv">
+    <div class="ticket-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="label" id="dropLabel">Tocca per caricare l'estratto CSV</div>
+      <div class="hint">Sostituisce solo i movimenti nuovi — nessun duplicato</div>
+    </div>
+  </label>
+
+  <div class="stato" id="stato"></div>
+
+  <div class="ribbon-wrap" id="ribbonWrap" style="display:none;">
+    <div class="ribbon-label"><span>ALLOCAZIONE</span><span id="ribbonUpdated"></span></div>
+    <div class="ribbon" id="ribbon"></div>
+  </div>
+
+  <div class="totale" id="totaleWrap" style="display:none;">
+    <span class="k">Totale investito</span>
+    <span class="v" id="totaleValore">€ 0</span>
+  </div>
+
+  <ul class="righe" id="righe"></ul>
+
+  <div class="vuoto" id="vuoto">
+    Nessun dato ancora. Carica il primo estratto per vedere il portafoglio.
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modale">
+    <h2>Codice di accesso</h2>
+    <p>Serve per collegarsi al tuo foglio Google. Resta salvato solo su questo telefono/browser, non nel codice della pagina.</p>
+    <label for="tokenInput">Codice</label>
+    <input type="password" id="tokenInput" autocomplete="off">
+    <label for="urlInput">URL Apps Script (Web App)</label>
+    <input type="text" id="urlInput" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
+    <div class="modale-azioni">
+      <button class="btn" id="btnAnnulla">Annulla</button>
+      <button class="btn primario" id="btnSalva">Salva</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  const STORAGE_KEY = 'tr_dashboard_config';
+(function () {
+  const LS_TOKEN = 'tr_token';
+  const LS_URL = 'tr_apps_script_url';
+
+  const els = {
+    fileInput: document.getElementById('fileInput'),
+    dropLabel: document.getElementById('dropLabel'),
+    stato: document.getElementById('stato'),
+    sottotitolo: document.getElementById('sottotitolo'),
+    ribbonWrap: document.getElementById('ribbonWrap'),
+    ribbon: document.getElementById('ribbon'),
+    ribbonUpdated: document.getElementById('ribbonUpdated'),
+    totaleWrap: document.getElementById('totaleWrap'),
+    totaleValore: document.getElementById('totaleValore'),
+    righe: document.getElementById('righe'),
+    vuoto: document.getElementById('vuoto'),
+    overlay: document.getElementById('overlay'),
+    btnImpostazioni: document.getElementById('btnImpostazioni'),
+    btnAnnulla: document.getElementById('btnAnnulla'),
+    btnSalva: document.getElementById('btnSalva'),
+    tokenInput: document.getElementById('tokenInput'),
+    urlInput: document.getElementById('urlInput'),
+  };
 
   function getConfig() {
-    let cfg = null;
-    try { cfg = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) {}
-    if (!cfg || !cfg.url || !cfg.token) {
-      const url = prompt('Incolla l\'URL della Web App di Apps Script (finisce con /exec):');
-      const token = prompt('Incolla il token segreto (SECRET_TOKEN dello script):');
-      if (!url || !token) { document.body.innerHTML = '<div class="state-msg error">Configurazione mancante. Ricarica la pagina per riprovare.</div>'; throw new Error('no config'); }
-      cfg = { url: url.trim(), token: token.trim() };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-    }
-    return cfg;
+    return {
+      token: localStorage.getItem(LS_TOKEN) || '',
+      url: localStorage.getItem(LS_URL) || ''
+    };
   }
 
-  function fmtEUR(n) {
-    return new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+  function apriImpostazioni() {
+    const c = getConfig();
+    els.tokenInput.value = c.token;
+    els.urlInput.value = c.url;
+    els.overlay.classList.add('aperto');
+    els.tokenInput.focus();
+  }
+  function chiudiImpostazioni() { els.overlay.classList.remove('aperto'); }
+
+  els.btnImpostazioni.addEventListener('click', apriImpostazioni);
+  els.btnAnnulla.addEventListener('click', chiudiImpostazioni);
+  els.overlay.addEventListener('click', (e) => { if (e.target === els.overlay) chiudiImpostazioni(); });
+
+  els.btnSalva.addEventListener('click', () => {
+    localStorage.setItem(LS_TOKEN, els.tokenInput.value.trim());
+    localStorage.setItem(LS_URL, els.urlInput.value.trim());
+    chiudiImpostazioni();
+    caricaRiepilogo();
+  });
+
+  function mostraStato(msg, tipo) {
+    els.stato.textContent = msg;
+    els.stato.className = 'stato visibile' + (tipo ? ' ' + tipo : '');
+  }
+  function nascondiStato() {
+    els.stato.className = 'stato';
   }
 
-  function ringSVG(pct, colorVar) {
-    const r = 26, c = 2 * Math.PI * r;
-    const filled = Math.max(0, Math.min(1, pct)) * c;
-    return `
-      <svg class="ring" width="64" height="64" viewBox="0 0 64 64">
-        <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--line)" stroke-width="6"/>
-        <circle cx="32" cy="32" r="${r}" fill="none" stroke="${colorVar}" stroke-width="6"
-          stroke-linecap="round" stroke-dasharray="${filled} ${c}"
-          transform="rotate(-90 32 32)"/>
-        <text x="32" y="37" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">${Math.round(pct*100)}%</text>
-      </svg>`;
+  const formatEuro = (n) => (Number(n) || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+  const formatPct = (n) => ((Number(n) || 0) * (Number(n) <= 1 ? 100 : 1)).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + '%';
+
+  // Palette procedurale: AZIONI in famiglia oro, ETF in famiglia verde/teal.
+  function coloreRiga(tipo, indice, totaleNelGruppo) {
+    const t = (tipo || '').toUpperCase();
+    const baseHue = t === 'AZIONI' ? 40 : 165;
+    const spread = 26;
+    const step = totaleNelGruppo > 1 ? (spread / (totaleNelGruppo - 1)) : 0;
+    const hue = baseHue - spread / 2 + step * indice;
+    const light = t === 'AZIONI' ? 58 : 46;
+    return `hsl(${hue.toFixed(0)}, 55%, ${light}%)`;
   }
 
-  function showToast(msg, ok) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show ' + (ok ? 'ok' : 'err');
-    setTimeout(() => t.classList.remove('show'), 3500);
-  }
+  function render(riepilogo) {
+    const righe = (riepilogo && riepilogo.righe) || [];
+    const totale = (riepilogo && riepilogo.totaleInvestito) || 0;
 
-  async function loadData() {
-    const cfg = getConfig();
-    const content = document.getElementById('content');
-    try {
-      const res = await fetch(`${cfg.url}?token=${encodeURIComponent(cfg.token)}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      render(data);
-    } catch (err) {
-      content.innerHTML = `<div class="state-msg error">Errore nel caricamento: ${err.message}<br><br>Controlla URL e token (li puoi ripristinare svuotando la memoria del browser per questa pagina).</div>`;
-    }
-  }
-
-  function render(data) {
-    document.getElementById('totaleInvestito').innerHTML = `${fmtEUR(data.totale)} <span class="cents">€</span>`;
-    document.getElementById('numStrumenti').textContent = `${data.strumenti.length} strumenti in portafoglio`;
-    document.getElementById('countLabel').textContent = `${data.strumenti.length} posizioni`;
-    document.getElementById('ultimoAggiornamento').textContent = new Date().toLocaleTimeString('it-IT');
-
-    const ordinati = [...data.strumenti].sort((a, b) => b.investito - a.investito);
-    const content = document.getElementById('content');
-
-    if (ordinati.length === 0) {
-      content.innerHTML = `<div class="state-msg">Nessuno strumento ancora. Importa un CSV per iniziare.</div>`;
+    if (righe.length === 0) {
+      els.vuoto.style.display = 'block';
+      els.ribbonWrap.style.display = 'none';
+      els.totaleWrap.style.display = 'none';
+      els.righe.innerHTML = '';
       return;
     }
+    els.vuoto.style.display = 'none';
+    els.totaleWrap.style.display = 'flex';
+    els.ribbonWrap.style.display = 'block';
 
-    content.innerHTML = `<div class="grid">${ordinati.map(cardHTML).join('')}</div>`;
-  }
+    els.totaleValore.textContent = formatEuro(totale);
+    els.ribbonUpdated.textContent = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-  function cardHTML(s) {
-    const isStock = s.tipo === 'AZIONI';
-    const colorVar = isStock ? 'var(--stock)' : 'var(--etf)';
-    return `
-      <div class="card">
-        <div class="card-top">
-          <div class="card-name">${s.strumento}</div>
-          <span class="badge ${isStock ? 'stock' : 'etf'}">${s.tipo}</span>
-        </div>
-        <div class="card-mid">
-          ${ringSVG(s.pctPortfolio, colorVar)}
-          <div class="card-stats">
-            <div class="stat"><div class="k">Quantità</div><div class="v">${Number(s.quantita).toLocaleString('it-IT', {maximumFractionDigits: 4})}</div></div>
-            <div class="stat"><div class="k">Prezzo medio</div><div class="v">${s.prezzoMedio ? fmtEUR(s.prezzoMedio) + ' €' : '—'}</div></div>
-            <div class="stat"><div class="k">Operazioni</div><div class="v">${s.nOperazioni}</div></div>
-            <div class="stat"><div class="k">Commissioni</div><div class="v">${fmtEUR(s.commissioni)} €</div></div>
+    // indice per famiglia, per distribuire le tonalità
+    const contaGruppo = {};
+    righe.forEach(r => { const t = (r.tipo || '').toUpperCase(); contaGruppo[t] = (contaGruppo[t] || 0) + 1; });
+    const idxGruppo = {};
+
+    els.ribbon.innerHTML = '';
+    els.righe.innerHTML = '';
+
+    righe.forEach((r) => {
+      const t = (r.tipo || '').toUpperCase();
+      idxGruppo[t] = (idxGruppo[t] || 0);
+      const colore = coloreRiga(t, idxGruppo[t], contaGruppo[t]);
+      idxGruppo[t]++;
+
+      const pctRaw = Number(r.pctPortfolio) || 0;
+      const pct = pctRaw <= 1 ? pctRaw * 100 : pctRaw;
+
+      // segmento nastro
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.style.background = colore;
+      els.ribbon.appendChild(seg);
+      requestAnimationFrame(() => { seg.style.width = Math.max(pct, 0.6) + '%'; });
+
+      // riga
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="riga-top">
+          <div class="riga-nome">
+            <span class="tag ${t === 'AZIONI' ? 'azioni' : 'etf'}">${t === 'AZIONI' ? 'AZ' : 'ETF'}</span>
+            <span class="nome">${r.strumento || '—'}</span>
+          </div>
+          <div class="riga-numeri">
+            <span class="investito">${formatEuro(r.investito)}</span>
+            <span class="pct">${formatPct(pctRaw)}</span>
           </div>
         </div>
-        <div class="card-bottom">
-          <span>Investito</span>
-          <span class="invested">${fmtEUR(s.investito)} €</span>
-        </div>
-      </div>`;
+        <div class="riga-bar"><span style="background:${colore}"></span></div>
+        <div class="riga-meta">${r.nOp || 0} op · qty ${Number(r.quantita || 0).toLocaleString('it-IT', { maximumFractionDigits: 4 })} · pmz ${formatEuro(r.prezzoMedio)}</div>
+      `;
+      els.righe.appendChild(li);
+      requestAnimationFrame(() => {
+        const bar = li.querySelector('.riga-bar span');
+        bar.style.width = Math.min(pct, 100) + '%';
+      });
+    });
   }
 
-  async function importCSV(file) {
+  async function chiamaAppsScript(metodo, body) {
     const cfg = getConfig();
-    const text = await file.text();
-    showToast('Importazione in corso…', true);
+    if (!cfg.token || !cfg.url) {
+      apriImpostazioni();
+      throw new Error('Configura prima codice e URL nelle impostazioni.');
+    }
+    if (metodo === 'GET') {
+      const res = await fetch(cfg.url + '?token=' + encodeURIComponent(cfg.token));
+      return res.json();
+    }
+    // text/plain evita il preflight CORS che Apps Script non gestisce
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ token: cfg.token }, body))
+    });
+    return res.json();
+  }
+
+  async function caricaRiepilogo() {
+    const cfg = getConfig();
+    if (!cfg.token || !cfg.url) return; // primo avvio, nessuna config ancora
     try {
-      const res = await fetch(cfg.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ token: cfg.token, csv: text })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      showToast(`Importate ${data.righe} righe`, true);
-      loadData();
+      mostraStato('Aggiorno il riepilogo…');
+      const risp = await chiamaAppsScript('GET');
+      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+      nascondiStato();
+      render(risp.riepilogo);
+      els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
-      showToast('Errore: ' + err.message, false);
+      mostraStato(String(err.message || err), 'errore');
     }
   }
 
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('fileInput');
-  dropZone.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', (e) => { if (e.target.files[0]) importCSV(e.target.files[0]); });
-  ['dragover', 'dragenter'].forEach(ev => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add('drag'); }));
-  ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove('drag'); }));
-  dropZone.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) importCSV(f); });
+  els.fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    els.dropLabel.textContent = file.name;
+    mostraStato('Carico ' + file.name + '…');
+    try {
+      const testo = await file.text();
+      const risp = await chiamaAppsScript('POST', { csv: testo });
+      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+      const n = risp.righe || 0;
+      mostraStato(n > 0 ? `Importate ${n} righe nuove.` : 'Nessuna riga nuova: già tutto aggiornato.', 'ok');
+      render(risp.riepilogo);
+      els.sottotitolo.textContent = 'Aggiornato ora';
+    } catch (err) {
+      mostraStato(String(err.message || err), 'errore');
+    } finally {
+      els.fileInput.value = '';
+      els.dropLabel.textContent = "Tocca per caricare l'estratto CSV";
+    }
+  });
 
-  loadData();
+  // Primo avvio: se c'è già una config salvata, mostra subito il riepilogo attuale.
+  const cfg = getConfig();
+  if (!cfg.token || !cfg.url) {
+    apriImpostazioni();
+  } else {
+    caricaRiepilogo();
+  }
+})();
 </script>
+
 </body>
 </html>
