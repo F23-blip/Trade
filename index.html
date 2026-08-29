@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -442,6 +441,7 @@
 (function () {
   const LS_TOKEN = 'tr_token';
   const LS_URL = 'tr_apps_script_url';
+  const LS_CACHE = 'tr_cache_riepilogo';
 
   // Valori precompilati — vedi nota di sicurezza: chiunque acceda al
   // sorgente di questa pagina pubblicata può leggerli.
@@ -602,18 +602,36 @@
     return res.json();
   }
 
-  async function caricaRiepilogo() {
+  function salvaCache(riepilogo) {
+    try {
+      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, ts: Date.now() }));
+    } catch (err) { /* storage pieno o non disponibile: non blocca nulla */ }
+  }
+
+  function leggiCache() {
+    try {
+      const raw = localStorage.getItem(LS_CACHE);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) { return null; }
+  }
+
+  async function caricaRiepilogo(inSottofondo) {
     const cfg = getConfig();
     if (!cfg.token || !cfg.url) return; // primo avvio, nessuna config ancora
     try {
-      mostraStato('Aggiorno il riepilogo…');
+      if (!inSottofondo) mostraStato('Aggiorno il riepilogo…');
       const risp = await chiamaAppsScript('GET');
-      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+      if (risp.error) {
+        if (!inSottofondo) mostraStato('Errore: ' + risp.error, 'errore');
+        return;
+      }
       nascondiStato();
       render(risp.riepilogo);
+      salvaCache(risp.riepilogo);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
-      mostraStato(String(err.message || err), 'errore');
+      // In sottofondo non mostriamo errore: resta visibile quanto già in cache.
+      if (!inSottofondo) mostraStato(String(err.message || err), 'errore');
     }
   }
 
@@ -629,6 +647,7 @@
       const n = risp.righe || 0;
       mostraStato(n > 0 ? `Importate ${n} righe nuove.` : 'Nessuna riga nuova: già tutto aggiornato.', 'ok');
       render(risp.riepilogo);
+      salvaCache(risp.riepilogo);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       mostraStato(String(err.message || err), 'errore');
@@ -638,12 +657,23 @@
     }
   });
 
-  // Primo avvio: se c'è già una config salvata, mostra subito il riepilogo attuale.
+  // Primo avvio: se c'è una copia salvata, la mostriamo SUBITO (nessuna
+  // attesa di rete, mai schermata vuota se hai già sincronizzato almeno
+  // una volta), poi aggiorniamo in sottofondo senza disturbare la vista
+  // se la rete è lenta o momentaneamente non disponibile.
   const cfg = getConfig();
   if (!cfg.token || !cfg.url) {
     apriImpostazioni();
   } else {
-    caricaRiepilogo();
+    const cache = leggiCache();
+    if (cache && cache.riepilogo) {
+      render(cache.riepilogo);
+      const minutiFa = Math.round((Date.now() - cache.ts) / 60000);
+      els.sottotitolo.textContent = minutiFa < 1 ? 'Aggiornato ora' : `Aggiornato ${minutiFa} min fa`;
+      caricaRiepilogo(true); // refresh silenzioso
+    } else {
+      caricaRiepilogo(false);
+    }
   }
 })();
 </script>
