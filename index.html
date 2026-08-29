@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -442,6 +443,11 @@
   const LS_TOKEN = 'tr_token';
   const LS_URL = 'tr_apps_script_url';
 
+  // Valori precompilati — vedi nota di sicurezza: chiunque acceda al
+  // sorgente di questa pagina pubblicata può leggerli.
+  const DEFAULT_TOKEN = '!Ventitre23!';
+  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyFc82gReP2ZCuXS-2kVy4_hkeaK_-tA2jLXMuOuL9tjBYo3Z2GXPvr9-7BAcky9zY/exec';
+
   const els = {
     fileInput: document.getElementById('fileInput'),
     dropLabel: document.getElementById('dropLabel'),
@@ -464,8 +470,8 @@
 
   function getConfig() {
     return {
-      token: localStorage.getItem(LS_TOKEN) || '',
-      url: localStorage.getItem(LS_URL) || ''
+      token: localStorage.getItem(LS_TOKEN) || DEFAULT_TOKEN,
+      url: localStorage.getItem(LS_URL) || DEFAULT_URL
     };
   }
 
