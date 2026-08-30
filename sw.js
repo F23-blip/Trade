@@ -1,4 +1,4 @@
- // Service worker — rende la pagina "installabile" su Android/Chrome e
+// Service worker — rende la pagina "installabile" su Android/Chrome e
 // disponibile anche offline. Non mette MAI in cache le chiamate verso
 // Apps Script: i dati del portafoglio devono sempre essere quelli freschi
 // (o la copia in localStorage gestita da index.html), mai una versione
@@ -11,7 +11,7 @@
 // installata, anche disinstallando e reinstallando l'icona (l'icona è
 // solo una scorciatoia, la cache resta legata al sito, non a quella).
 
-const CACHE_NAME = 'portafoglio-tr-v2';
+const CACHE_NAME = 'portafoglio-tr-v3';
 const FILE_DA_CACHARE = [
   './',
   './index.html',
