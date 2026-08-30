@@ -399,6 +399,64 @@
     margin-top: 3px;
   }
 
+  .movimento {
+    cursor: pointer;
+    transition: grid-column 0.01s;
+  }
+  .movimento:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .movimento.aperta { grid-column: 1 / -1; }
+  .m-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .m-chevron {
+    color: var(--muted);
+    flex: none;
+    display: flex;
+    margin-top: 2px;
+    transition: transform 0.25s ease;
+  }
+  .movimento.aperta .m-chevron { transform: rotate(90deg); color: var(--gold); }
+  @media (prefers-reduced-motion: reduce) {
+    .m-chevron { transition: none; }
+  }
+
+  .dettagli-mov {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease;
+  }
+  .movimento.aperta .dettagli-mov { grid-template-rows: 1fr; }
+  @media (prefers-reduced-motion: reduce) {
+    .dettagli-mov { transition: none; }
+  }
+  .dettagli-mov-inner { overflow: hidden; }
+  .mov-op {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 0;
+    border-top: 1px dashed var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+  }
+  .mov-op:first-child { border-top: 1px dashed var(--line); margin-top: 10px; }
+  .mov-op .mo-data { color: var(--muted); flex: none; }
+  .mov-op .mo-desc {
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mov-op .mo-importo { flex: none; font-weight: 500; }
+
   /* ---- modale impostazioni ---- */
   .overlay {
     position: fixed;
@@ -641,15 +699,55 @@
       return;
     }
     els.movimentiWrap.style.display = 'block';
-    els.movimentiGrid.innerHTML = lista.map(m => {
+    els.movimentiGrid.innerHTML = '';
+
+    lista.forEach(m => {
       const totale = Number(m.totale) || 0;
       const classeSegno = totale > 0 ? 'positivo' : (totale < 0 ? 'negativo' : '');
       const segno = totale > 0 ? '+' : '';
+      const operazioni = Array.isArray(m.operazioni) ? m.operazioni : [];
+
+      const card = document.createElement('div');
+      card.className = 'movimento';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-expanded', 'false');
+      card.innerHTML = `
+        <div class="m-top">
+          <div>
+            <div class="m-label">${ETICHETTE_MOVIMENTI[m.tipo] || m.tipo}</div>
+            <div class="m-valore ${classeSegno}">${segno}${formatEuro(totale)}</div>
+            <div class="m-conteggio">${m.conteggio} mov.</div>
+          </div>
+          <span class="m-chevron">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
+          </span>
+        </div>
+        <div class="dettagli-mov"><div class="dettagli-mov-inner">${renderOperazioniMovimento(operazioni)}</div></div>
+      `;
+      card.addEventListener('click', () => toggleMovimento(card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMovimento(card); }
+      });
+      els.movimentiGrid.appendChild(card);
+    });
+  }
+
+  function toggleMovimento(card) {
+    const aperta = card.classList.toggle('aperta');
+    card.setAttribute('aria-expanded', aperta ? 'true' : 'false');
+  }
+
+  function renderOperazioniMovimento(operazioni) {
+    if (!operazioni.length) return '<div class="mov-op"><span class="mo-desc">Nessun movimento trovato.</span></div>';
+    return operazioni.map(op => {
+      const dataFmt = formatData(op.data);
+      const importo = formatEuro(op.importo);
       return `
-        <div class="movimento">
-          <div class="m-label">${ETICHETTE_MOVIMENTI[m.tipo] || m.tipo}</div>
-          <div class="m-valore ${classeSegno}">${segno}${formatEuro(totale)}</div>
-          <div class="m-conteggio">${m.conteggio} mov.</div>
+        <div class="mov-op">
+          <span class="mo-data">${dataFmt}</span>
+          <span class="mo-desc">${op.descrizione || ''}</span>
+          <span class="mo-importo">${importo}</span>
         </div>`;
     }).join('');
   }
@@ -733,6 +831,11 @@
     });
   }
 
+  const formatData = (dataStr) => {
+    const data = new Date(dataStr);
+    return isNaN(data) ? dataStr : data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  };
+
   function toggleRiga(li) {
     const aperta = li.classList.toggle('aperta');
     li.setAttribute('aria-expanded', aperta ? 'true' : 'false');
@@ -741,8 +844,7 @@
   function renderOperazioni(operazioni) {
     if (!operazioni.length) return '<li class="op-vuoto">Nessuna operazione trovata.</li>';
     return operazioni.map(op => {
-      const data = new Date(op.data);
-      const dataFmt = isNaN(data) ? op.data : data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const dataFmt = formatData(op.data);
       const tipoClasse = op.tipo === 'SELL' ? 'sell' : 'buy';
       const qty = Number(op.quantita || 0).toLocaleString('it-IT', { maximumFractionDigits: 4 });
       const prezzo = formatEuro(op.prezzo);
