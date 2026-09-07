@@ -1,968 +1,215 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portafoglio · TradeRepublic</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3ef">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="App Medica">
+  <title>App Medica</title>
 
-<!-- PWA: manifest, icone, comportamento "app" su iOS/Android -->
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0B1220">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Portafoglio">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0B1220;
-    --panel: #121B2E;
-    --panel-2: #17223A;
-    --line: #263455;
-    --text: #ECE7DA;
-    --muted: #8B93A7;
-    --gain: #2FA36B;
-    --gold: #C9A24B;
-    --err: #C1443D;
-    --radius: 14px;
-  }
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
-  * { box-sizing: border-box; }
-
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  body {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding: 24px 16px 64px;
-  }
-
-  main {
-    width: 100%;
-    max-width: 480px;
-  }
-
-  .eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--gold);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .eyebrow .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--gain);
-    animation: pulse 2.4s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
-  }
-
-  h1 {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 28px;
-    margin: 0 0 4px;
-    letter-spacing: -0.01em;
-  }
-
-  .sub {
-    color: var(--muted);
-    font-size: 14px;
-    margin: 0 0 24px;
-  }
-
-  button.icon-btn {
-    background: none;
-    border: 1px solid var(--line);
-    color: var(--muted);
-    border-radius: 10px;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-  button.icon-btn:hover { color: var(--text); border-color: var(--gold); }
-
-  .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  /* ---- dropzone ---- */
-  .dropzone {
-    position: relative;
-    border: 1.5px dashed var(--line);
-    border-radius: var(--radius);
-    padding: 22px 18px;
-    background: var(--panel);
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .dropzone:hover, .dropzone:focus-within { border-color: var(--gold); background: var(--panel-2); }
-  .dropzone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-  }
-  .dropzone .ticket-mark {
-    width: 40px;
-    height: 40px;
-    flex: none;
-    border-radius: 10px;
-    background: var(--panel-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gold);
-  }
-  .dropzone .label {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 500;
-    font-size: 15px;
-  }
-  .dropzone .hint {
-    color: var(--muted);
-    font-size: 12.5px;
-    margin-top: 2px;
-  }
-
-  /* ---- ribbon ---- */
-  .ribbon-wrap { margin-top: 22px; }
-  .ribbon-label {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-    margin-bottom: 6px;
-  }
-  .ribbon {
-    display: flex;
-    width: 100%;
-    height: 10px;
-    border-radius: 5px;
-    overflow: hidden;
-    background: var(--panel);
-  }
-  .ribbon .seg {
-    height: 100%;
-    width: 0%;
-    transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .ribbon .seg { transition: none; }
-  }
-
-  /* ---- totale ---- */
-  .totale {
-    margin-top: 26px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 14px;
-  }
-  .totale .k {
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .totale .v {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 26px;
-  }
-
-  /* ---- righe portfolio ---- */
-  ul.righe {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  ul.righe li {
-    padding: 13px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  ul.righe li:last-child { border-bottom: none; }
-  ul.righe li.cliccabile { cursor: pointer; }
-  ul.righe li.cliccabile:hover .riga-nome .nome { color: var(--gold); }
-  ul.righe li:focus-visible {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
-    border-radius: 6px;
-  }
-
-  .riga-chevron {
-    color: var(--muted);
-    flex: none;
-    display: flex;
-    transition: transform 0.25s ease;
-  }
-  li.aperta .riga-chevron { transform: rotate(90deg); color: var(--gold); }
-  @media (prefers-reduced-motion: reduce) {
-    .riga-chevron { transition: none; }
-  }
-
-  .dettagli {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.28s ease;
-  }
-  li.aperta .dettagli { grid-template-rows: 1fr; }
-  @media (prefers-reduced-motion: reduce) {
-    .dettagli { transition: none; }
-  }
-  .dettagli-inner { overflow: hidden; }
-  .dettagli ul {
-    list-style: none;
-    margin: 10px 0 0;
-    padding: 10px 0 0;
-    border-top: 1px dashed var(--line);
-  }
-  .op {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
-    padding: 5px 0;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-  }
-  .op .op-data { color: var(--muted); flex: none; }
-  .op .op-tipo {
-    flex: none;
-    font-size: 10px;
-    padding: 1px 5px;
-    border-radius: 4px;
-    letter-spacing: 0.03em;
-  }
-  .op .op-tipo.buy { background: rgba(47,163,107,0.16); color: var(--gain); }
-  .op .op-tipo.sell { background: rgba(193,68,61,0.16); color: var(--err); }
-  .op .op-mid { color: var(--text); flex: 1; text-align: right; }
-  .op .op-importo { flex: none; min-width: 70px; text-align: right; }
-  .op-vuoto { color: var(--muted); font-size: 12px; padding: 6px 0; }
-
-  .riga-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-  }
-  .riga-nome {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-  .riga-nome .nome {
-    font-weight: 500;
-    font-size: 14.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tag {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.04em;
-    padding: 2px 6px;
-    border-radius: 5px;
-    flex: none;
-  }
-  .tag.azioni { background: rgba(201,162,75,0.16); color: var(--gold); }
-  .tag.etf { background: rgba(47,163,107,0.16); color: var(--gain); }
-
-  .riga-numeri {
-    display: flex;
-    gap: 14px;
-    align-items: baseline;
-    font-family: 'IBM Plex Mono', monospace;
-    flex: none;
-  }
-  .riga-numeri .investito {
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .riga-numeri .pct {
-    font-size: 12.5px;
-    color: var(--muted);
-    min-width: 42px;
-    text-align: right;
-  }
-
-  .riga-bar {
-    margin-top: 8px;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--panel);
-    overflow: hidden;
-  }
-  .riga-bar span {
-    display: block;
-    height: 100%;
-    width: 0%;
-    transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .riga-bar span { transition: none; }
-  }
-
-  .riga-meta {
-    margin-top: 4px;
-    font-size: 11.5px;
-    color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  /* ---- stati ---- */
-  .stato {
-    margin-top: 18px;
-    font-size: 13px;
-    color: var(--muted);
-    display: none;
-  }
-  .stato.visibile { display: block; }
-  .stato.errore { color: var(--err); }
-  .stato.ok { color: var(--gain); }
-
-  .vuoto {
-    margin-top: 40px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 13.5px;
-    padding: 20px 10px;
-    border: 1px dashed var(--line);
-    border-radius: var(--radius);
-  }
-
-  /* ---- movimenti di liquidità ---- */
-  .movimenti-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .movimento {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 12px 13px;
-  }
-  .movimento .m-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.03em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .movimento .m-valore {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 18px;
-  }
-  .movimento .m-valore.positivo { color: var(--gain); }
-  .movimento .m-valore.negativo { color: var(--err); }
-  .movimento .m-conteggio {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 3px;
-  }
-
-  .movimento {
-    cursor: pointer;
-    transition: grid-column 0.01s;
-  }
-  .movimento:focus-visible {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
-  }
-  .movimento.aperta { grid-column: 1 / -1; }
-  .m-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .m-chevron {
-    color: var(--muted);
-    flex: none;
-    display: flex;
-    margin-top: 2px;
-    transition: transform 0.25s ease;
-  }
-  .movimento.aperta .m-chevron { transform: rotate(90deg); color: var(--gold); }
-  @media (prefers-reduced-motion: reduce) {
-    .m-chevron { transition: none; }
-  }
-
-  .dettagli-mov {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.28s ease;
-  }
-  .movimento.aperta .dettagli-mov { grid-template-rows: 1fr; }
-  @media (prefers-reduced-motion: reduce) {
-    .dettagli-mov { transition: none; }
-  }
-  .dettagli-mov-inner { overflow: hidden; }
-  .mov-op {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding: 6px 0;
-    border-top: 1px dashed var(--line);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11.5px;
-  }
-  .mov-op:first-child { border-top: 1px dashed var(--line); margin-top: 10px; }
-  .mov-op .mo-data { color: var(--muted); flex: none; }
-  .mov-op .mo-desc {
-    color: var(--text);
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .mov-op .mo-importo { flex: none; font-weight: 500; }
-
-  /* ---- modale impostazioni ---- */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5,8,15,0.72);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    z-index: 10;
-  }
-  .overlay.aperto { display: flex; }
-  .modale {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 22px;
-    width: 100%;
-    max-width: 360px;
-  }
-  .modale h2 {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 17px;
-    margin: 0 0 6px;
-  }
-  .modale p {
-    color: var(--muted);
-    font-size: 12.5px;
-    margin: 0 0 16px;
-    line-height: 1.5;
-  }
-  .modale label {
-    font-size: 12px;
-    color: var(--muted);
-    display: block;
-    margin-bottom: 6px;
-  }
-  .modale input[type="text"], .modale input[type="password"] {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--line);
-    color: var(--text);
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    margin-bottom: 14px;
-  }
-  .modale input:focus, .dropzone:focus-within, button:focus-visible, .icon-btn:focus-visible {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
-  }
-  .modale-azioni {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-  .btn {
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-weight: 500;
-    font-size: 13.5px;
-    padding: 9px 16px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: transparent;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .btn.primario {
-    background: var(--gold);
-    border-color: var(--gold);
-    color: #1a1408;
-  }
-  .btn:hover { border-color: var(--gold); }
-</style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<main>
-  <div class="topbar">
-    <div>
-      <div class="eyebrow"><span class="dot"></span>PORTAFOGLIO · TRADEREPUBLIC</div>
-      <h1>Riepilogo</h1>
-      <p class="sub" id="sottotitolo">Carica l'ultimo estratto per aggiornare</p>
+<!-- ── LOADING ────────────────────────────────────────── -->
+<div id="loading-screen">
+  <img class="loading-logo" src="icon-512.png" alt="App Medica" style="width:64px;height:64px;object-fit:contain">
+  <div class="spinner"></div>
+  <div class="loading-text">Caricamento in corso…</div>
+</div>
+
+<!-- ── SCHERMATA CODICE DI ACCESSO ─────────────────────── -->
+<div id="token-screen">
+  <div class="token-box">
+    <img class="token-logo" src="icon-512.png" alt="App Medica">
+    <div class="token-title">App Medica</div>
+    <div class="token-sub">Inserisci il tuo codice di accesso</div>
+    <div class="form-group">
+      <input class="form-input" type="password" id="inp-token" placeholder="Codice" autocomplete="off"
+        onkeydown="if(event.key==='Enter') salvaToken()">
     </div>
-    <button class="icon-btn" id="btnImpostazioni" aria-label="Impostazioni" title="Impostazioni">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64c.6-.24 1.02-.8 1.04-1.44V3a2 2 0 1 1 4 0v.09c.02.64.44 1.2 1.04 1.44.68.28 1.46.14 1.98-.38l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.52.52-.66 1.3-.38 1.98.24.6.8 1.02 1.44 1.04H21a2 2 0 1 1 0 4h-.09c-.64.02-1.2.44-1.44 1.04Z"/>
-      </svg>
-    </button>
-  </div>
-
-  <label class="dropzone" for="fileInput">
-    <input type="file" id="fileInput" accept=".csv,text/csv">
-    <div class="ticket-mark">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
-      </svg>
-    </div>
-    <div>
-      <div class="label" id="dropLabel">Tocca per caricare l'estratto CSV</div>
-      <div class="hint">Sostituisce solo i movimenti nuovi — nessun duplicato</div>
-    </div>
-  </label>
-
-  <div class="stato" id="stato"></div>
-
-  <div class="ribbon-wrap" id="ribbonWrap" style="display:none;">
-    <div class="ribbon-label"><span>ALLOCAZIONE</span><span id="ribbonUpdated"></span></div>
-    <div class="ribbon" id="ribbon"></div>
-  </div>
-
-  <div class="totale" id="totaleWrap" style="display:none;">
-    <span class="k">Totale investito</span>
-    <span class="v" id="totaleValore">€ 0</span>
-  </div>
-
-  <ul class="righe" id="righe"></ul>
-
-  <div class="vuoto" id="vuoto">
-    Nessun dato ancora. Carica il primo estratto per vedere il portafoglio.
-  </div>
-
-  <div class="movimenti-wrap" id="movimentiWrap" style="display:none;">
-    <div class="ribbon-label" style="margin-top:28px;"><span>MOVIMENTI DI LIQUIDITÀ</span></div>
-    <div class="movimenti-grid" id="movimentiGrid"></div>
-  </div>
-</main>
-
-<div class="overlay" id="overlay">
-  <div class="modale">
-    <h2>Codice di accesso</h2>
-    <p>Serve per collegarsi al tuo foglio Google. Resta salvato solo su questo telefono/browser, non nel codice della pagina.</p>
-    <label for="tokenInput">Codice</label>
-    <input type="password" id="tokenInput" autocomplete="off">
-    <label for="urlInput">URL Apps Script (Web App)</label>
-    <input type="text" id="urlInput" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
-    <div class="modale-azioni">
-      <button class="btn" id="btnAnnulla">Annulla</button>
-      <button class="btn primario" id="btnSalva">Salva</button>
-    </div>
+    <button class="btn btn-primary" onclick="salvaToken()">Accedi</button>
+    <div class="token-error" id="token-error"></div>
   </div>
 </div>
 
-<script>
-(function () {
-  const LS_TOKEN = 'tr_token';
-  const LS_URL = 'tr_apps_script_url';
-  const LS_CACHE = 'tr_cache_riepilogo';
+<!-- ── ERROR SCREEN ───────────────────────────────────── -->
+<div id="error-screen">
+  <div class="error-icon">🔒</div>
+  <div class="error-title">Accesso negato</div>
+  <div class="error-msg" id="error-msg-text">Non hai il permesso di accedere a questa app.</div>
+</div>
 
-  // Valori precompilati — vedi nota di sicurezza: chiunque acceda al
-  // sorgente di questa pagina pubblicata può leggerli.
-  const DEFAULT_TOKEN = '!Ventitre23!';
-  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyFc82gReP2ZCuXS-2kVy4_hkeaK_-tA2jLXMuOuL9tjBYo3Z2GXPvr9-7BAcky9zY/exec';
+<!-- ── APP SHELL ──────────────────────────────────────── -->
+<div id="app" style="display:none">
 
-  const els = {
-    fileInput: document.getElementById('fileInput'),
-    dropLabel: document.getElementById('dropLabel'),
-    stato: document.getElementById('stato'),
-    sottotitolo: document.getElementById('sottotitolo'),
-    ribbonWrap: document.getElementById('ribbonWrap'),
-    ribbon: document.getElementById('ribbon'),
-    ribbonUpdated: document.getElementById('ribbonUpdated'),
-    totaleWrap: document.getElementById('totaleWrap'),
-    totaleValore: document.getElementById('totaleValore'),
-    righe: document.getElementById('righe'),
-    vuoto: document.getElementById('vuoto'),
-    movimentiWrap: document.getElementById('movimentiWrap'),
-    movimentiGrid: document.getElementById('movimentiGrid'),
-    overlay: document.getElementById('overlay'),
-    btnImpostazioni: document.getElementById('btnImpostazioni'),
-    btnAnnulla: document.getElementById('btnAnnulla'),
-    btnSalva: document.getElementById('btnSalva'),
-    tokenInput: document.getElementById('tokenInput'),
-    urlInput: document.getElementById('urlInput'),
-  };
+  <header id="topbar">
+    <div class="topbar-title" id="topbar-title">App Medica</div>
+    <div id="paziente-select-wrap" style="display:none">
+      <select id="paziente-select" onchange="onPazienteChange(this.value)"></select>
+    </div>
+    <div class="topbar-avatar" id="user-avatar" onclick="navigateTo('profilo')" title="Profilo">??</div>
+  </header>
 
-  function getConfig() {
-    return {
-      token: localStorage.getItem(LS_TOKEN) || DEFAULT_TOKEN,
-      url: localStorage.getItem(LS_URL) || DEFAULT_URL
-    };
-  }
+  <main id="main-content">
 
-  function apriImpostazioni() {
-    const c = getConfig();
-    els.tokenInput.value = c.token;
-    els.urlInput.value = c.url;
-    els.overlay.classList.add('aperto');
-    els.tokenInput.focus();
-  }
-  function chiudiImpostazioni() { els.overlay.classList.remove('aperto'); }
+    <section class="page active" id="page-dashboard">
+      <p class="section-title">Riepilogo</p>
+      <div id="dashboard-content">
+        <div class="empty-state"><div class="empty-state-icon">📊</div><p>Caricamento dati…</p></div>
+      </div>
+    </section>
 
-  els.btnImpostazioni.addEventListener('click', apriImpostazioni);
-  els.btnAnnulla.addEventListener('click', chiudiImpostazioni);
-  els.overlay.addEventListener('click', (e) => { if (e.target === els.overlay) chiudiImpostazioni(); });
+    <section class="page" id="page-pressione">
+      <p class="section-title">Ultime misurazioni</p>
+      <div class="card">
+        <div class="card-title">Andamento — ultimi 10</div>
+        <div class="chart-wrap"><canvas id="chart-pressione"></canvas></div>
+      </div>
+      <p class="section-title">Storico</p>
+      <div class="card" id="pressione-list">
+        <div class="empty-state"><div class="empty-state-icon">❤️</div><p>Nessuna misurazione</p></div>
+      </div>
+    </section>
 
-  els.btnSalva.addEventListener('click', () => {
-    localStorage.setItem(LS_TOKEN, els.tokenInput.value.trim());
-    localStorage.setItem(LS_URL, els.urlInput.value.trim());
-    chiudiImpostazioni();
-    caricaRiepilogo();
-  });
+    <section class="page" id="page-esami">
+      <p class="section-title">Esami recenti</p>
+      <div class="card" id="esami-list">
+        <div class="empty-state"><div class="empty-state-icon">🔬</div><p>Nessun esame registrato</p></div>
+      </div>
+    </section>
 
-  function mostraStato(msg, tipo) {
-    els.stato.textContent = msg;
-    els.stato.className = 'stato visibile' + (tipo ? ' ' + tipo : '');
-  }
-  function nascondiStato() {
-    els.stato.className = 'stato';
-  }
+    <section class="page" id="page-patologie">
+      <p class="section-title">Farmaci e patologie</p>
+      <div class="card">
+        <div class="empty-state"><div class="empty-state-icon">💊</div><p>Sezione in sviluppo</p></div>
+      </div>
+    </section>
 
-  const formatEuro = (n) => (Number(n) || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
-  const formatPct = (n) => ((Number(n) || 0) * (Number(n) <= 1 ? 100 : 1)).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + '%';
+    <section class="page" id="page-profilo">
+      <p class="section-title">Il tuo profilo</p>
+      <div class="card" id="profilo-content">
+        <div class="empty-state"><div class="empty-state-icon">👤</div><p>Caricamento…</p></div>
+      </div>
+    </section>
 
-  // Palette procedurale: AZIONI in famiglia oro, ETF in famiglia verde/teal.
-  function coloreRiga(tipo, indice, totaleNelGruppo) {
-    const t = (tipo || '').toUpperCase();
-    const baseHue = t === 'AZIONI' ? 40 : 165;
-    const spread = 26;
-    const step = totaleNelGruppo > 1 ? (spread / (totaleNelGruppo - 1)) : 0;
-    const hue = baseHue - spread / 2 + step * indice;
-    const light = t === 'AZIONI' ? 58 : 46;
-    return `hsl(${hue.toFixed(0)}, 55%, ${light}%)`;
-  }
+  </main>
 
-  const ETICHETTE_MOVIMENTI = {
-    TRANSFER_INBOUND: 'Bonifici in entrata',
-    DIVIDEND: 'Dividendi',
-    INTEREST_PAYMENT: 'Interessi',
-    TAX_OPTIMIZATION: 'Bolli / Imposte'
-  };
+  <button class="fab" id="fab-add" onclick="fabAction()" style="display:none" aria-label="Aggiungi">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
 
-  function renderMovimenti(movimenti) {
-    const lista = Array.isArray(movimenti) ? movimenti : [];
-    const conTotali = lista.filter(m => m.conteggio > 0);
-    if (conTotali.length === 0) {
-      els.movimentiWrap.style.display = 'none';
-      return;
-    }
-    els.movimentiWrap.style.display = 'block';
-    els.movimentiGrid.innerHTML = '';
+  <nav id="bottom-nav">
+    <button class="nav-item active" onclick="navigateTo('dashboard')" id="nav-dashboard">
+      <div class="nav-dot"></div>
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Home
+    </button>
+    <button class="nav-item" onclick="navigateTo('pressione')" id="nav-pressione">
+      <div class="nav-dot"></div>
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Pressione
+    </button>
+    <button class="nav-item" onclick="navigateTo('esami')" id="nav-esami">
+      <div class="nav-dot"></div>
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      Esami
+    </button>
+    <button class="nav-item" onclick="navigateTo('patologie')" id="nav-patologie">
+      <div class="nav-dot"></div>
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Patologie
+    </button>
+    <button class="nav-item" onclick="navigateTo('profilo')" id="nav-profilo">
+      <div class="nav-dot"></div>
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profilo
+    </button>
+  </nav>
 
-    lista.forEach(m => {
-      const totale = Number(m.totale) || 0;
-      const classeSegno = totale > 0 ? 'positivo' : (totale < 0 ? 'negativo' : '');
-      const segno = totale > 0 ? '+' : '';
-      const operazioni = Array.isArray(m.operazioni) ? m.operazioni : [];
+</div><!-- /app -->
 
-      const card = document.createElement('div');
-      card.className = 'movimento';
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-expanded', 'false');
-      card.innerHTML = `
-        <div class="m-top">
-          <div>
-            <div class="m-label">${ETICHETTE_MOVIMENTI[m.tipo] || m.tipo}</div>
-            <div class="m-valore ${classeSegno}">${segno}${formatEuro(totale)}</div>
-            <div class="m-conteggio">${m.conteggio} mov.</div>
-          </div>
-          <span class="m-chevron">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
-          </span>
-        </div>
-        <div class="dettagli-mov"><div class="dettagli-mov-inner">${renderOperazioniMovimento(operazioni)}</div></div>
-      `;
-      card.addEventListener('click', () => toggleMovimento(card));
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMovimento(card); }
-      });
-      els.movimentiGrid.appendChild(card);
-    });
-  }
+<!-- ── MODAL INSERIMENTO PRESSIONE ───────────────────── -->
+<div class="modal-overlay" id="modal-pressione" onclick="closeModalOnBg(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuova misurazione</div>
 
-  function toggleMovimento(card) {
-    const aperta = card.classList.toggle('aperta');
-    card.setAttribute('aria-expanded', aperta ? 'true' : 'false');
-  }
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Sistolica</label>
+        <input class="form-input" type="number" id="inp-sist" min="60" max="250" placeholder="120" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Diastolica</label>
+        <input class="form-input" type="number" id="inp-diast" min="40" max="150" placeholder="80" inputmode="numeric">
+      </div>
+    </div>
 
-  function renderOperazioniMovimento(operazioni) {
-    if (!operazioni.length) return '<div class="mov-op"><span class="mo-desc">Nessun movimento trovato.</span></div>';
-    return operazioni.map(op => {
-      const dataFmt = formatData(op.data);
-      const importo = formatEuro(op.importo);
-      return `
-        <div class="mov-op">
-          <span class="mo-data">${dataFmt}</span>
-          <span class="mo-desc">${op.descrizione || ''}</span>
-          <span class="mo-importo">${importo}</span>
-        </div>`;
-    }).join('');
-  }
+    <div class="form-group">
+      <label class="form-label">Pulsazioni</label>
+      <input class="form-input" type="number" id="inp-pulse" min="30" max="200" placeholder="72" inputmode="numeric">
+    </div>
 
-  function render(riepilogo) {
-    const righe = (riepilogo && riepilogo.righe) || [];
-    const totale = (riepilogo && riepilogo.totaleInvestito) || 0;
+    <div class="form-group">
+      <label class="form-label">Note (opzionale)</label>
+      <input class="form-input" type="text" id="inp-nota" placeholder="es. dopo camminata, a riposo…" maxlength="200">
+    </div>
 
-    if (righe.length === 0) {
-      els.vuoto.style.display = 'block';
-      els.ribbonWrap.style.display = 'none';
-      els.totaleWrap.style.display = 'none';
-      els.righe.innerHTML = '';
-      return;
-    }
-    els.vuoto.style.display = 'none';
-    els.totaleWrap.style.display = 'flex';
-    els.ribbonWrap.style.display = 'block';
+    <div id="bp-preview" style="text-align:center; margin: 8px 0 16px; min-height:24px"></div>
 
-    els.totaleValore.textContent = formatEuro(totale);
-    els.ribbonUpdated.textContent = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    <button class="btn btn-primary" id="btn-salva-pressione" onclick="salvaPressione()">
+      Salva misurazione
+    </button>
+  </div>
+</div>
 
-    // indice per famiglia, per distribuire le tonalità
-    const contaGruppo = {};
-    righe.forEach(r => { const t = (r.tipo || '').toUpperCase(); contaGruppo[t] = (contaGruppo[t] || 0) + 1; });
-    const idxGruppo = {};
+<!-- ── MODAL NUOVO ESAME ──────────────────────────────── -->
+<div class="modal-overlay" id="modal-esame" onclick="closeModalEsameOnBg(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuovo esame</div>
 
-    els.ribbon.innerHTML = '';
-    els.righe.innerHTML = '';
+    <div class="form-group">
+      <label class="form-label">Data</label>
+      <input class="form-input" type="date" id="inp-data-esame">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo visita / esame</label>
+      <input class="form-input" type="text" id="inp-visite" placeholder="es. Emocromo, Visita cardiologica…">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">LDL mg/dL</label><input class="form-input" type="number" id="inp-ldl" placeholder="—" step="0.1" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">HDL mg/dL</label><input class="form-input" type="number" id="inp-hdl" placeholder="—" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Trigliceridi</label><input class="form-input" type="number" id="inp-trig" placeholder="—" step="0.1" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Creatinina</label><input class="form-input" type="number" id="inp-creat" placeholder="—" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">TSH mU/L</label><input class="form-input" type="number" id="inp-tsh" placeholder="—" step="0.01" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Vit. D3 ng/mL</label><input class="form-input" type="number" id="inp-vitd" placeholder="—" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Tariffa €</label><input class="form-input" type="number" id="inp-tariffa" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+      <div class="form-group"><label class="form-label">Note</label><input class="form-input" type="text" id="inp-nota-esame" placeholder="…"></div>
+    </div>
 
-    righe.forEach((r) => {
-      const t = (r.tipo || '').toUpperCase();
-      idxGruppo[t] = (idxGruppo[t] || 0);
-      const colore = coloreRiga(t, idxGruppo[t], contaGruppo[t]);
-      idxGruppo[t]++;
+    <button class="btn btn-primary" id="btn-salva-esame" onclick="salvaEsame()" style="margin-top:8px">Salva esame</button>
+  </div>
+</div>
 
-      const pctRaw = Number(r.pctPortfolio) || 0;
-      const pct = pctRaw <= 1 ? pctRaw * 100 : pctRaw;
+<!-- ── TOAST ──────────────────────────────────────────── -->
+<div id="toast"></div>
 
-      // segmento nastro
-      const seg = document.createElement('div');
-      seg.className = 'seg';
-      seg.style.background = colore;
-      els.ribbon.appendChild(seg);
-      requestAnimationFrame(() => { seg.style.width = Math.max(pct, 0.6) + '%'; });
-
-      // riga
-      const operazioni = Array.isArray(r.operazioni) ? r.operazioni : [];
-      const li = document.createElement('li');
-      li.className = 'cliccabile';
-      li.tabIndex = 0;
-      li.setAttribute('role', 'button');
-      li.setAttribute('aria-expanded', 'false');
-      li.innerHTML = `
-        <div class="riga-top">
-          <div class="riga-nome">
-            <span class="riga-chevron">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
-            </span>
-            <span class="tag ${t === 'AZIONI' ? 'azioni' : 'etf'}">${t === 'AZIONI' ? 'AZ' : 'ETF'}</span>
-            <span class="nome">${r.strumento || '—'}</span>
-          </div>
-          <div class="riga-numeri">
-            <span class="investito">${formatEuro(r.investito)}</span>
-            <span class="pct">${formatPct(pctRaw)}</span>
-          </div>
-        </div>
-        <div class="riga-bar"><span style="background:${colore}"></span></div>
-        <div class="riga-meta">${r.nOp || 0} op · qty ${Number(r.quantita || 0).toLocaleString('it-IT', { maximumFractionDigits: 4 })} · pmz ${formatEuro(r.prezzoMedio)}</div>
-        <div class="dettagli"><div class="dettagli-inner"><ul>${renderOperazioni(operazioni)}</ul></div></div>
-      `;
-      li.addEventListener('click', () => toggleRiga(li));
-      li.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRiga(li); }
-      });
-      els.righe.appendChild(li);
-      requestAnimationFrame(() => {
-        const bar = li.querySelector('.riga-bar span');
-        bar.style.width = Math.min(pct, 100) + '%';
-      });
-    });
-  }
-
-  const formatData = (dataStr) => {
-    const data = new Date(dataStr);
-    return isNaN(data) ? dataStr : data.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  };
-
-  function toggleRiga(li) {
-    const aperta = li.classList.toggle('aperta');
-    li.setAttribute('aria-expanded', aperta ? 'true' : 'false');
-  }
-
-  function renderOperazioni(operazioni) {
-    if (!operazioni.length) return '<li class="op-vuoto">Nessuna operazione trovata.</li>';
-    return operazioni.map(op => {
-      const dataFmt = formatData(op.data);
-      const tipoClasse = op.tipo === 'SELL' ? 'sell' : 'buy';
-      const qty = Number(op.quantita || 0).toLocaleString('it-IT', { maximumFractionDigits: 4 });
-      const prezzo = formatEuro(op.prezzo);
-      const importo = formatEuro(op.importo);
-      return `
-        <li class="op">
-          <span class="op-data">${dataFmt}</span>
-          <span class="op-tipo ${tipoClasse}">${op.tipo}</span>
-          <span class="op-mid">${qty} @ ${prezzo}</span>
-          <span class="op-importo">${importo}</span>
-        </li>`;
-    }).join('');
-  }
-
-  async function chiamaAppsScript(metodo, body) {
-    const cfg = getConfig();
-    if (!cfg.token || !cfg.url) {
-      apriImpostazioni();
-      throw new Error('Configura prima codice e URL nelle impostazioni.');
-    }
-    if (metodo === 'GET') {
-      const res = await fetch(cfg.url + '?token=' + encodeURIComponent(cfg.token));
-      return res.json();
-    }
-    // text/plain evita il preflight CORS che Apps Script non gestisce
-    const res = await fetch(cfg.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ token: cfg.token }, body))
-    });
-    return res.json();
-  }
-
-  function salvaCache(riepilogo, movimentiCash) {
-    try {
-      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, movimentiCash, ts: Date.now() }));
-    } catch (err) { /* storage pieno o non disponibile: non blocca nulla */ }
-  }
-
-  function leggiCache() {
-    try {
-      const raw = localStorage.getItem(LS_CACHE);
-      return raw ? JSON.parse(raw) : null;
-    } catch (err) { return null; }
-  }
-
-  async function caricaRiepilogo(inSottofondo) {
-    const cfg = getConfig();
-    if (!cfg.token || !cfg.url) return; // primo avvio, nessuna config ancora
-    try {
-      if (!inSottofondo) mostraStato('Aggiorno il riepilogo…');
-      const risp = await chiamaAppsScript('GET');
-      if (risp.error) {
-        if (!inSottofondo) mostraStato('Errore: ' + risp.error, 'errore');
-        return;
-      }
-      nascondiStato();
-      render(risp.riepilogo);
-      renderMovimenti(risp.movimentiCash);
-      salvaCache(risp.riepilogo, risp.movimentiCash);
-      els.sottotitolo.textContent = 'Aggiornato ora';
-    } catch (err) {
-      // In sottofondo non mostriamo errore: resta visibile quanto già in cache.
-      if (!inSottofondo) mostraStato(String(err.message || err), 'errore');
-    }
-  }
-
-  els.fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    els.dropLabel.textContent = file.name;
-    mostraStato('Carico ' + file.name + '…');
-    try {
-      const testo = await file.text();
-      const risp = await chiamaAppsScript('POST', { csv: testo });
-      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
-      const n = risp.righe || 0;
-      mostraStato(n > 0 ? `Importate ${n} righe nuove.` : 'Nessuna riga nuova: già tutto aggiornato.', 'ok');
-      render(risp.riepilogo);
-      renderMovimenti(risp.movimentiCash);
-      salvaCache(risp.riepilogo, risp.movimentiCash);
-      els.sottotitolo.textContent = 'Aggiornato ora';
-    } catch (err) {
-      mostraStato(String(err.message || err), 'errore');
-    } finally {
-      els.fileInput.value = '';
-      els.dropLabel.textContent = "Tocca per caricare l'estratto CSV";
-    }
-  });
-
-  // Primo avvio: se c'è una copia salvata, la mostriamo SUBITO (nessuna
-  // attesa di rete, mai schermata vuota se hai già sincronizzato almeno
-  // una volta), poi aggiorniamo in sottofondo senza disturbare la vista
-  // se la rete è lenta o momentaneamente non disponibile.
-  const cfg = getConfig();
-  if (!cfg.token || !cfg.url) {
-    apriImpostazioni();
-  } else {
-    const cache = leggiCache();
-    if (cache && cache.riepilogo) {
-      render(cache.riepilogo);
-      renderMovimenti(cache.movimentiCash);
-      const minutiFa = Math.round((Date.now() - cache.ts) / 60000);
-      els.sottotitolo.textContent = minutiFa < 1 ? 'Aggiornato ora' : `Aggiornato ${minutiFa} min fa`;
-      caricaRiepilogo(true); // refresh silenzioso
-    } else {
-      caricaRiepilogo(false);
-    }
-  }
-})();
-
-// Registrazione service worker (rende la pagina installabile su Android/Chrome).
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* non bloccante */ });
-  });
-}
-</script>
-
+<!-- ── CHART.JS ───────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
