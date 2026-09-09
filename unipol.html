@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unipol · Portafoglio</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Unipol">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0B1220;
+    --panel: #121B2E;
+    --panel-2: #17223A;
+    --line: #263455;
+    --text: #ECE7DA;
+    --muted: #8B93A7;
+    --gain: #2FA36B;
+    --gold: #C9A24B;
+    --err: #C1443D;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 64px;
+  }
+
+  main { width: 100%; max-width: 560px; }
+
+  a.back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 14px;
+  }
+  a.back:hover { color: var(--gold); }
+
+  .topbar { display: flex; justify-content: space-between; align-items: flex-start; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gain);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+
+  button.icon-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    border-radius: 10px;
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  button.icon-btn:hover { color: var(--text); border-color: var(--gold); }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+  .btn {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 12.5px;
+    padding: 8px 13px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn.primario { background: var(--gold); border-color: var(--gold); color: #1a1408; }
+  .btn.pericolo { color: var(--err); border-color: var(--line); }
+  .btn:hover { border-color: var(--gold); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* ---- card prodotto ---- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .card-head .nome {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 3px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+  .tag.gs { background: rgba(201,162,75,0.16); color: var(--gold); }
+  .tag.quote { background: rgba(47,163,107,0.16); color: var(--gain); }
+  .tag.polizza { background: rgba(139,147,167,0.2); color: var(--text); }
+
+  .meta {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 16px;
+  }
+
+  .kpi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .kpi .k { font-size: 11.5px; color: var(--muted); }
+  .kpi .v { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; }
+  .kpi .v.positivo { color: var(--gain); }
+  .kpi .v.negativo { color: var(--err); }
+  .kpi .d { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .chart-wrap { position: relative; height: 170px; margin-bottom: 14px; }
+  .chart-empty {
+    color: var(--muted);
+    font-size: 12.5px;
+    text-align: center;
+    padding: 30px 10px;
+  }
+
+  details.storico { margin-bottom: 16px; }
+  details.storico summary {
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.03em;
+    padding: 4px 0;
+    list-style: none;
+  }
+  details.storico summary::-webkit-details-marker { display: none; }
+  details.storico summary:before { content: '▸ '; color: var(--gold); }
+  details.storico[open] summary:before { content: '▾ '; }
+
+  table.tbl { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+  table.tbl th {
+    text-align: right;
+    color: var(--muted);
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    padding: 4px 6px;
+    border-bottom: 1px dashed var(--line);
+  }
+  table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
+  table.tbl td {
+    text-align: right;
+    padding: 5px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    border-bottom: 1px dashed var(--line);
+    color: var(--text);
+  }
+  table.tbl tr:last-child td { border-bottom: none; }
+  .del-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 13px; padding: 0 2px; line-height: 1;
+  }
+  .del-btn:hover { color: var(--err); }
+
+  form.add-form {
+    border-top: 1px dashed var(--line);
+    padding-top: 14px;
+  }
+  form.add-form .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  form.add-form label {
+    font-size: 11px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 5px;
+  }
+  form.add-form input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  form.add-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .form-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .form-hint { font-size: 11px; color: var(--muted); }
+  .stato-inline {
+    font-size: 12px;
+    margin-top: 8px;
+    display: none;
+  }
+  .stato-inline.visibile { display: block; }
+  .stato-inline.ok { color: var(--gain); }
+  .stato-inline.errore { color: var(--err); }
+
+  input[type="file"].hidden-file { display: none; }
+</style>
+</head>
+<body>
+
+<main>
+  <a class="back" href="index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 18-6-6 6-6"/></svg>
+    Portafoglio
+  </a>
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>UNIPOL</div>
+      <h1>Polizze &amp; Gestioni</h1>
+      <p class="sub">Dati inseriti a mano dalle comunicazioni Unipol</p>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" id="btnEsporta">Esporta dati (JSON)</button>
+    <button class="btn" id="btnImporta">Importa dati</button>
+    <input type="file" id="fileImporta" class="hidden-file" accept="application/json">
+    <button class="btn pericolo" id="btnReset">Ripristina dati iniziali</button>
+  </div>
+
+  <div id="cards"></div>
+</main>
+
+<script>
+(function () {
+  const LS_KEY = 'unipol_readings_v1';
+
+  const PRODUCTS = [
+    {
+      id: '34fb7a0v',
+      nome: 'Valore Equilibrato',
+      tipo: 'Gestione Separata',
+      tag: 'gs',
+      capitaleInvestito: 63000,
+      dataInizio: '20/02/2025',
+      valueField: 'controvaloreGS',
+      valueLabel: 'Controvalore rivalutato',
+      rateField: 'performanceLorda',
+      rateLabel: 'Rendimento annuo',
+      fields: [
+        { key: 'controvaloreGS', label: 'Controvalore rivalutato (€)', step: '0.01' },
+        { key: 'performanceLorda', label: 'Rendimento annuo (%)', step: '0.01' }
+      ]
+    },
+    {
+      id: '34fb7a05',
+      nome: 'Valore Equilibrato',
+      tipo: 'Capitale in Quote',
+      tag: 'quote',
+      capitaleInvestito: 26949.32,
+      dataInizio: '20/02/2025',
+      quoteIniziali: 2315.433,
+      valueField: 'valoreQuota',
+      valueLabel: 'Valore quota',
+      fields: [
+        { key: 'valoreQuota', label: 'Valore quota (€)', step: '0.001' },
+        { key: 'nQuote', label: 'N. quote', step: '0.0001' }
+      ]
+    },
+    {
+      id: 'dc37b0fc',
+      nome: 'Protezione',
+      tipo: 'Polizza Vita',
+      tag: 'polizza',
+      capitaleInvestito: 29506.55,
+      dataInizio: '10/11/2003',
+      valueField: 'controvalore',
+      valueLabel: 'Controvalore rivalutato',
+      rateField: 'tassoAnnuo',
+      rateLabel: 'Tasso annuo',
+      fields: [
+        { key: 'controvalore', label: 'Controvalore rivalutato (€)', step: '0.01' },
+        { key: 'tassoAnnuo', label: 'Tasso rendimento annuo (%)', step: '0.01' },
+        { key: 'rendimentoNetto', label: 'Rendimento netto (%)', step: '0.01' }
+      ]
+    }
+  ];
+
+  // Dati storici ricavati dalle comunicazioni Unipol caricate.
+  const SEED = {"34fb7a0v":[{"data":"31/07/2024","performanceLorda":4.21},{"data":"31/08/2024","performanceLorda":4.21},{"data":"30/09/2024","performanceLorda":4.2},{"data":"31/10/2024","performanceLorda":4.2},{"data":"30/11/2024","performanceLorda":4.2},{"data":"31/12/2024","performanceLorda":4.16},{"data":"31/01/2025","performanceLorda":4.15},{"data":"28/02/2025","valorePolizza":29506.55,"gestioneSeparata":63000.0,"performanceLorda":4.12},{"data":"31/03/2025","performanceLorda":4.1},{"data":"30/04/2025","performanceLorda":4.09},{"data":"31/05/2025","performanceLorda":4.14},{"data":"30/06/2025","performanceLorda":4.1},{"data":"31/07/2025","performanceLorda":4.06},{"data":"31/08/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64183.83,"performanceLorda":4.0},{"data":"30/09/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64220.23,"performanceLorda":4.0},{"data":"14/11/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64293.06,"performanceLorda":4.0},{"data":"22/11/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64366.01,"performanceLorda":4.0},{"data":"06/12/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64342.0,"performanceLorda":4.0},{"data":"10/01/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64290.4,"performanceLorda":4.0},{"data":"24/01/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64556.12,"performanceLorda":4.0},{"data":"13/03/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64717.97,"performanceLorda":4.0},{"data":"04/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64799.05,"performanceLorda":4.0},{"data":"04/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64934.41,"performanceLorda":4.0},{"data":"13/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":64961.53,"performanceLorda":4.0},{"data":"30/06/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":65260.43,"performanceLorda":4.0},{"data":"31/07/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"controvaloreGS":65287.67,"performanceLorda":0.0}],"34fb7a05":[{"data":"24/02/2025","valorePolizza":29506.55,"gestioneSeparata":63000.0,"nQuote":2315.433,"valoreQuota":11.72},{"data":"03/03/2025","nQuote":2315.433,"valoreQuota":11.66},{"data":"10/03/2025","nQuote":2315.433,"valoreQuota":11.4},{"data":"24/03/2025","nQuote":2315.433,"valoreQuota":11.57},{"data":"31/03/2025","nQuote":2315.433,"valoreQuota":11.36},{"data":"07/04/2025","nQuote":2315.433,"valoreQuota":11.15},{"data":"21/04/2025","nQuote":2315.433,"valoreQuota":11.17},{"data":"05/05/2025","nQuote":2315.433,"valoreQuota":11.25},{"data":"12/05/2025","nQuote":2315.433,"valoreQuota":11.35},{"data":"19/05/2025","nQuote":2315.433,"valoreQuota":11.48},{"data":"02/06/2025","nQuote":2315.433,"valoreQuota":11.49},{"data":"16/06/2025","nQuote":2315.433,"valoreQuota":11.45},{"data":"01/07/2025","nQuote":2315.433,"valoreQuota":11.51},{"data":"21/07/2025","nQuote":2315.433,"valoreQuota":11.56},{"data":"28/07/2025","nQuote":2315.433,"valoreQuota":11.66},{"data":"11/08/2025","nQuote":2315.433,"valoreQuota":11.62},{"data":"25/08/2025","nQuote":2315.433,"valoreQuota":11.66},{"data":"05/09/2025","valorePolizza":30736.21,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"nQuote":2315.433,"valoreQuota":11.58},{"data":"12/09/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.71},{"data":"18/09/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.73},{"data":"24/09/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.78},{"data":"03/10/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.8},{"data":"08/10/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.89},{"data":"15/10/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.89},{"data":"22/10/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"controvaloreEq":27539.76,"nQuote":2315.433,"valoreQuota":12.0},{"data":"31/10/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"controvaloreEq":27785.2,"nQuote":2315.433,"valoreQuota":12.04},{"data":"07/11/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"controvaloreEq":27785.2,"nQuote":2315.433,"valoreQuota":12.04},{"data":"14/11/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.01},{"data":"19/11/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.87},{"data":"27/11/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.94},{"data":"04/12/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.96},{"data":"29/12/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.9},{"data":"07/01/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"controvaloreEq":27806.03,"nQuote":2315.433,"valoreQuota":12.01},{"data":"14/01/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.08},{"data":"22/01/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.96},{"data":"28/01/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.96},{"data":"05/02/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.99},{"data":"11/02/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.03},{"data":"18/02/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.04},{"data":"25/02/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.11},{"data":"04/03/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.05},{"data":"11/03/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.06},{"data":"18/03/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.02},{"data":"25/03/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.81},{"data":"02/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.8},{"data":"10/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.96},{"data":"16/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":11.98},{"data":"23/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.07},{"data":"29/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.08},{"data":"06/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"controvaloreEq":28151.03,"nQuote":2315.433,"valoreQuota":12.16},{"data":"13/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.18},{"data":"21/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.19},{"data":"27/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.36},{"data":"03/06/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.44},{"data":"11/06/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.27},{"data":"19/06/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.41},{"data":"25/06/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.44},{"data":"01/07/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.48},{"data":"09/07/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.44},{"data":"17/07/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.43},{"data":"23/07/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.4},{"data":"30/07/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.37},{"data":"06/08/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.45},{"data":"14/08/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.45},{"data":"24/08/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.38},{"data":"03/09/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"gestioneSeparata":63000.0,"performanceLorda":0.0,"nQuote":2315.433,"valoreQuota":12.34}],"dc37b0fc":[{"data":"10/11/2024","valorePolizza":29506.55,"tassoAnnuo":4.0,"rendimentoNetto":3.0,"controvalore":30736.21},{"data":"25/07/2025","valorePolizza":30736.21,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":31479.1},{"data":"06/12/2025","valorePolizza":29506.55,"tassoAnnuo":4.12,"rendimentoNetto":3.37,"controvalore":31772.02,"gestioneSeparata":63000.0,"performanceLorda":0.0},{"data":"31/12/2025","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":31919.49,"gestioneSeparata":63000.0,"performanceLorda":0.0},{"data":"28/02/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":32111.54,"gestioneSeparata":63000.0,"performanceLorda":0.0},{"data":"31/03/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":32207.88,"gestioneSeparata":63000.0,"performanceLorda":0.0},{"data":"30/04/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":32301.37,"gestioneSeparata":63000.0,"performanceLorda":0.0},{"data":"31/05/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":32398.28,"gestioneSeparata":63000.0,"performanceLorda":0.0},{"data":"30/06/2026","valorePolizza":29506.55,"tassoAnnuo":0.0,"rendimentoNetto":0.0,"controvalore":32492.34,"gestioneSeparata":63000.0,"performanceLorda":0.0}]};
+
+  const els = {
+    cards: document.getElementById('cards'),
+    btnEsporta: document.getElementById('btnEsporta'),
+    btnImporta: document.getElementById('btnImporta'),
+    fileImporta: document.getElementById('fileImporta'),
+    btnReset: document.getElementById('btnReset')
+  };
+
+  const charts = {};
+
+  function caricaDati() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (err) { /* localStorage non disponibile */ }
+    return JSON.parse(JSON.stringify(SEED));
+  }
+
+  function salvaDati(dati) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(dati)); }
+    catch (err) { /* storage pieno o non disponibile */ }
+  }
+
+  let DATI = caricaDati();
+
+  const formatEuro = (n) => (Number(n) || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+  const formatNum = (n, dec) => (Number(n) || 0).toLocaleString('it-IT', { maximumFractionDigits: dec != null ? dec : 2, minimumFractionDigits: 0 });
+
+  function parseDataIT(str) {
+    const [g, m, a] = (str || '').split('/').map(Number);
+    return new Date(a || 1970, (m || 1) - 1, g || 1);
+  }
+  function formatDataBreve(str) {
+    const d = parseDataIT(str);
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' });
+  }
+
+  function righeProdotto(prod) {
+    const arr = DATI[prod.id] || [];
+    return arr.slice().sort((a, b) => parseDataIT(a.data) - parseDataIT(b.data));
+  }
+
+  function ultimoValore(righe, field) {
+    for (let i = righe.length - 1; i >= 0; i--) {
+      if (righe[i][field] != null) return righe[i][field];
+    }
+    return null;
+  }
+
+  function renderKpi(prod, righe) {
+    const ultimo = ultimoValore(righe, prod.valueField);
+    const capitale = prod.capitaleInvestito;
+    let valoreHtml, deltaHtml = '';
+    if (ultimo != null) {
+      const delta = ultimo - capitale;
+      const deltaPct = capitale ? (delta / capitale) * 100 : 0;
+      const classe = delta > 0 ? 'positivo' : (delta < 0 ? 'negativo' : '');
+      const segno = delta > 0 ? '+' : '';
+      valoreHtml = `<span class="v ${classe}">${formatEuro(ultimo)}</span>`;
+      deltaHtml = `<div class="d">${segno}${formatEuro(delta)} (${segno}${formatNum(deltaPct, 1)}%) vs capitale investito</div>`;
+    } else {
+      valoreHtml = `<span class="v">—</span>`;
+      deltaHtml = `<div class="d">Nessun dato di controvalore ancora inserito</div>`;
+    }
+    return `
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="k">${prod.valueLabel}</div>
+          ${valoreHtml}
+          ${deltaHtml}
+        </div>
+        <div class="kpi" style="text-align:right;">
+          <div class="k">Capitale investito</div>
+          <div class="v" style="font-size:16px;">${formatEuro(capitale)}</div>
+          <div class="d">dal ${prod.dataInizio}</div>
+        </div>
+      </div>`;
+  }
+
+  function renderTabella(prod, righe) {
+    if (!righe.length) return '<p class="form-hint">Nessuna rilevazione ancora inserita.</p>';
+    const cols = [prod.valueField];
+    if (prod.rateField) cols.push(prod.rateField);
+    if (prod.id === '34fb7a05') cols.push('nQuote');
+    const intestazioni = { controvaloreGS: 'Controvalore', valoreQuota: 'Val. quota', controvalore: 'Controvalore', performanceLorda: 'Rend. %', tassoAnnuo: 'Tasso %', nQuote: 'N. quote', rendimentoNetto: 'Rend. netto %' };
+    const righeInvertite = righe.slice().reverse();
+    const testata = '<tr><th>Data</th>' + cols.map(c => `<th>${intestazioni[c] || c}</th>`).join('') + '<th></th></tr>';
+    const corpo = righeInvertite.map((r, idxRev) => {
+      const idxOrig = righe.length - 1 - idxRev;
+      const celle = cols.map(c => {
+        const val = r[c];
+        if (val == null) return '<td>—</td>';
+        if (c === 'nQuote') return `<td>${formatNum(val, 4)}</td>`;
+        if (c === 'valoreQuota') return `<td>${formatNum(val, 3)}</td>`;
+        if (c === 'performanceLorda' || c === 'tassoAnnuo' || c === 'rendimentoNetto') return `<td>${formatNum(val, 2)}%</td>`;
+        return `<td>${formatEuro(val)}</td>`;
+      }).join('');
+      return `<tr><td>${formatDataBreve(r.data)}</td>${celle}<td><button class="del-btn" data-prod="${prod.id}" data-idx="${idxOrig}" title="Elimina rilevazione">✕</button></td></tr>`;
+    }).join('');
+    return `<table class="tbl">${testata}${corpo}</table>`;
+  }
+
+  function renderForm(prod) {
+    const campi = prod.fields.map(f => `
+      <div>
+        <label for="in-${prod.id}-${f.key}">${f.label}</label>
+        <input type="number" step="${f.step}" id="in-${prod.id}-${f.key}" data-key="${f.key}">
+      </div>`).join('');
+    return `
+      <form class="add-form" data-prod="${prod.id}">
+        <div class="field-grid">
+          <div>
+            <label for="in-${prod.id}-data">Data rilevazione</label>
+            <input type="date" id="in-${prod.id}-data" required>
+          </div>
+          ${campi}
+        </div>
+        <div class="form-actions">
+          <span class="form-hint">Lascia vuoto un campo se non disponibile</span>
+          <button type="submit" class="btn primario">Aggiungi</button>
+        </div>
+        <div class="stato-inline" data-stato></div>
+      </form>`;
+  }
+
+  function costruisciDatasetGrafico(prod, righe) {
+    const conValore = righe.filter(r => r[prod.valueField] != null);
+    const labels = conValore.map(r => formatDataBreve(r.data));
+    const datasets = [{
+      label: prod.valueLabel,
+      data: conValore.map(r => r[prod.valueField]),
+      borderColor: '#C9A24B',
+      backgroundColor: 'rgba(201,162,75,0.12)',
+      tension: 0.25,
+      pointRadius: 2,
+      fill: true,
+      yAxisID: 'y'
+    }];
+    if (prod.rateField) {
+      const conTasso = righe.filter(r => r[prod.rateField] != null);
+      if (conTasso.length) {
+        // riallinea sulle stesse etichette dell'asse principale quando possibile,
+        // altrimenti costruisce un proprio asse temporale
+        datasets.push({
+          label: prod.rateLabel + ' %',
+          data: righe.map(r => r[prod.rateField]),
+          borderColor: '#2FA36B',
+          backgroundColor: 'transparent',
+          borderDash: [4, 3],
+          tension: 0.25,
+          pointRadius: 1.5,
+          spanGaps: true,
+          yAxisID: 'y1'
+        });
+      }
+    }
+    return { labels: righe.map(r => formatDataBreve(r.data)), datasets, soloConValore: labels };
+  }
+
+  function renderGrafico(prod, righe, canvasId) {
+    const haValore = righe.some(r => r[prod.valueField] != null);
+    const wrap = document.getElementById('wrap-' + canvasId);
+    if (!haValore) {
+      wrap.innerHTML = '<div class="chart-empty">Aggiungi almeno una rilevazione di ' + prod.valueLabel.toLowerCase() + ' per vedere il grafico.</div>';
+      return;
+    }
+    wrap.innerHTML = `<canvas id="${canvasId}"></canvas>`;
+    const ctx = document.getElementById(canvasId).getContext('2d');
+
+    const labels = righe.map(r => formatDataBreve(r.data));
+    const datiValore = righe.map(r => (r[prod.valueField] != null ? r[prod.valueField] : null));
+    const datasets = [{
+      label: prod.valueLabel,
+      data: datiValore,
+      borderColor: '#C9A24B',
+      backgroundColor: 'rgba(201,162,75,0.12)',
+      tension: 0.25,
+      pointRadius: 2,
+      spanGaps: true,
+      fill: true,
+      yAxisID: 'y'
+    }];
+
+    const scales = {
+      x: { ticks: { color: '#8B93A7', maxTicksLimit: 6, font: { size: 10 } }, grid: { color: '#1c2740' } },
+      y: { ticks: { color: '#8B93A7', font: { size: 10 } }, grid: { color: '#1c2740' } }
+    };
+
+    if (prod.rateField) {
+      const datiTasso = righe.map(r => (r[prod.rateField] != null ? r[prod.rateField] : null));
+      const haTasso = datiTasso.some(v => v != null);
+      if (haTasso) {
+        datasets.push({
+          label: prod.rateLabel + ' %',
+          data: datiTasso,
+          borderColor: '#2FA36B',
+          backgroundColor: 'transparent',
+          borderDash: [4, 3],
+          tension: 0.2,
+          pointRadius: 1.5,
+          spanGaps: true,
+          yAxisID: 'y1'
+        });
+        scales.y1 = {
+          position: 'right',
+          ticks: { color: '#2FA36B', font: { size: 10 }, callback: (v) => v + '%' },
+          grid: { drawOnChartArea: false }
+        };
+      }
+    }
+
+    if (charts[canvasId]) charts[canvasId].destroy();
+    charts[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: datasets.length > 1, labels: { color: '#ECE7DA', font: { size: 10.5 }, boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                if (ctx.dataset.yAxisID === 'y1') return ctx.dataset.label + ': ' + formatNum(ctx.raw, 2) + '%';
+                return ctx.dataset.label + ': ' + formatEuro(ctx.raw);
+              }
+            }
+          }
+        },
+        scales
+      }
+    });
+  }
+
+  function renderCard(prod) {
+    const righe = righeProdotto(prod);
+    const canvasId = 'chart-' + prod.id;
+    return `
+      <div class="card" data-prod-card="${prod.id}">
+        <div class="card-head">
+          <span class="nome">${prod.nome}</span>
+          <span class="tag ${prod.tag}">${prod.tipo}</span>
+        </div>
+        <div class="meta">ID ${prod.id}${prod.quoteIniziali ? ' · quote iniziali ' + formatNum(prod.quoteIniziali, 4) : ''}</div>
+        ${renderKpi(prod, righe)}
+        <div class="chart-wrap" id="wrap-${canvasId}"></div>
+        <details class="storico">
+          <summary>Storico rilevazioni (${righe.length})</summary>
+          ${renderTabella(prod, righe)}
+        </details>
+        ${renderForm(prod)}
+      </div>`;
+  }
+
+  function renderTutto() {
+    els.cards.innerHTML = PRODUCTS.map(renderCard).join('');
+    PRODUCTS.forEach(prod => {
+      const righe = righeProdotto(prod);
+      renderGrafico(prod, righe, 'chart-' + prod.id);
+    });
+    agganciaEventi();
+  }
+
+  function agganciaEventi() {
+    els.cards.querySelectorAll('form.add-form').forEach(form => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const prodId = form.getAttribute('data-prod');
+        const prod = PRODUCTS.find(p => p.id === prodId);
+        const dataInput = form.querySelector('input[type="date"]');
+        const statoEl = form.querySelector('[data-stato]');
+        if (!dataInput.value) return;
+        const [aa, mm, gg] = dataInput.value.split('-');
+        const entry = { data: `${gg}/${mm}/${aa}` };
+        let almenoUnValore = false;
+        form.querySelectorAll('input[data-key]').forEach(inp => {
+          if (inp.value !== '') {
+            entry[inp.getAttribute('data-key')] = parseFloat(inp.value.replace(',', '.'));
+            almenoUnValore = true;
+          }
+        });
+        if (!almenoUnValore) {
+          statoEl.textContent = 'Inserisci almeno un valore oltre alla data.';
+          statoEl.className = 'stato-inline visibile errore';
+          return;
+        }
+        if (!DATI[prodId]) DATI[prodId] = [];
+        DATI[prodId].push(entry);
+        salvaDati(DATI);
+        renderTutto();
+      });
+    });
+
+    els.cards.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prodId = btn.getAttribute('data-prod');
+        const righeOrdinate = righeProdotto(PRODUCTS.find(p => p.id === prodId));
+        const idx = Number(btn.getAttribute('data-idx'));
+        const voce = righeOrdinate[idx];
+        if (!voce) return;
+        if (!confirm(`Eliminare la rilevazione del ${voce.data}?`)) return;
+        const arr = DATI[prodId] || [];
+        const pos = arr.indexOf(voce);
+        if (pos >= 0) arr.splice(pos, 1);
+        salvaDati(DATI);
+        renderTutto();
+      });
+    });
+  }
+
+  els.btnEsporta.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(DATI, null, 1)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'unipol-dati-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  els.btnImporta.addEventListener('click', () => els.fileImporta.click());
+  els.fileImporta.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const testo = await file.text();
+      const parsed = JSON.parse(testo);
+      if (!confirm('Importare questo file sostituirà i dati attuali. Continuare?')) { e.target.value = ''; return; }
+      DATI = parsed;
+      salvaDati(DATI);
+      renderTutto();
+    } catch (err) {
+      alert('File non valido: ' + err.message);
+    } finally {
+      e.target.value = '';
+    }
+  });
+
+  els.btnReset.addEventListener('click', () => {
+    if (!confirm('Ripristinare i dati iniziali? Le rilevazioni aggiunte manualmente andranno perse.')) return;
+    DATI = JSON.parse(JSON.stringify(SEED));
+    salvaDati(DATI);
+    renderTutto();
+  });
+
+  renderTutto();
+})();
+</script>
+
+</body>
+</html>
