@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0B1220;
@@ -507,10 +507,14 @@
   }
 
   function renderGrafico(prod, righe, canvasId) {
-    const haValore = righe.some(r => r[prod.valueField] != null);
     const wrap = document.getElementById('wrap-' + canvasId);
+    const haValore = righe.some(r => r[prod.valueField] != null);
     if (!haValore) {
       wrap.innerHTML = '<div class="chart-empty">Aggiungi almeno una rilevazione di ' + prod.valueLabel.toLowerCase() + ' per vedere il grafico.</div>';
+      return;
+    }
+    if (typeof Chart === 'undefined') {
+      wrap.innerHTML = '<div class="chart-empty">Grafico non disponibile (libreria non caricata). Verifica la connessione e ricarica la pagina.</div>';
       return;
     }
     wrap.innerHTML = `<canvas id="${canvasId}"></canvas>`;
@@ -605,8 +609,13 @@
   function renderTutto() {
     els.cards.innerHTML = PRODUCTS.map(renderCard).join('');
     PRODUCTS.forEach(prod => {
-      const righe = righeProdotto(prod);
-      renderGrafico(prod, righe, 'chart-' + prod.id);
+      try {
+        const righe = righeProdotto(prod);
+        renderGrafico(prod, righe, 'chart-' + prod.id);
+      } catch (err) {
+        const wrap = document.getElementById('wrap-chart-' + prod.id);
+        if (wrap) wrap.innerHTML = '<div class="chart-empty">Grafico non disponibile al momento.</div>';
+      }
     });
     agganciaEventi();
   }
