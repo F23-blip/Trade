@@ -1,3 +1,4 @@
+ 
 (() => {
   "use strict";
 
@@ -75,7 +76,9 @@
     const s = document.createElement("style");
     s.textContent = `
       #trade-lock-overlay{position:fixed;inset:0;background:#0f1115;color:#fff;z-index:999999;
+        visibility:visible!important;
         display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,sans-serif;gap:18px}
+      #trade-lock-overlay *{visibility:visible!important}
       #trade-lock-overlay .dots{display:flex;gap:14px}
       #trade-lock-overlay .dot{width:14px;height:14px;border-radius:50%;border:2px solid #888}
       #trade-lock-overlay .dot.filled{background:#4f8cff;border-color:#4f8cff}
