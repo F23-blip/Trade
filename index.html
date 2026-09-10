@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -106,6 +106,23 @@
     cursor: pointer;
   }
   button.icon-btn:hover { color: var(--text); border-color: var(--gold); }
+
+  .icon-btn.brand-unipol {
+    color: #E4463B;
+    border-color: rgba(228,70,59,0.35);
+  }
+  .icon-btn.brand-unipol:hover {
+    color: #ff6157;
+    border-color: #E4463B;
+  }
+  .icon-btn.brand-intesa {
+    color: #2FC77E;
+    border-color: rgba(47,199,126,0.35);
+  }
+  .icon-btn.brand-intesa:hover {
+    color: #45e494;
+    border-color: #2FC77E;
+  }
 
   .topbar {
     display: flex;
@@ -543,9 +560,14 @@
       <p class="sub" id="sottotitolo">Carica l'ultimo estratto per aggiornare</p>
     </div>
     <div style="display:flex; gap:8px;">
-      <a class="icon-btn" href="unipol.html" aria-label="Unipol" title="Unipol" style="text-decoration:none;">
+      <a class="icon-btn brand-unipol" href="unipol.html" aria-label="Unipol" title="Unipol" style="text-decoration:none;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3Z"/>
+        </svg>
+      </a>
+      <a class="icon-btn brand-intesa" href="intesa.html" aria-label="Intesa Sanpaolo" title="Intesa Sanpaolo" style="text-decoration:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 21h18"/><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>
         </svg>
       </a>
       <button class="icon-btn" id="btnImpostazioni" aria-label="Impostazioni" title="Impostazioni">
