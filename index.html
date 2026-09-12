@@ -545,6 +545,16 @@
   .elenco-andamento .ea-guadagno { flex: none; font-weight: 500; }
   .elenco-andamento .ea-guadagno.positivo { color: var(--gain); }
   .elenco-andamento .ea-guadagno.negativo { color: var(--err); }
+  .elenco-andamento .ea-elimina {
+    flex: none;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    display: flex;
+  }
+  .elenco-andamento .ea-elimina:hover { color: var(--err); }
 
   /* ---- modale impostazioni ---- */
   .overlay {
@@ -639,21 +649,6 @@
     </button>
   </div>
 
-  <label class="dropzone" for="fileInput">
-    <input type="file" id="fileInput" accept=".csv,text/csv">
-    <div class="ticket-mark">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
-      </svg>
-    </div>
-    <div>
-      <div class="label" id="dropLabel">Tocca per caricare l'estratto CSV</div>
-      <div class="hint">Sostituisce solo i movimenti nuovi — nessun duplicato</div>
-    </div>
-  </label>
-
-  <div class="stato" id="stato"></div>
-
   <div class="ribbon-wrap" id="ribbonWrap" style="display:none;">
     <div class="ribbon-label"><span>ALLOCAZIONE</span><span id="ribbonUpdated"></span></div>
     <div class="ribbon" id="ribbon"></div>
@@ -701,6 +696,21 @@
       Nessun valore ancora. Aggiungi la prima istantanea per iniziare il grafico.
     </div>
   </div>
+
+  <label class="dropzone" for="fileInput" style="margin-top:28px;">
+    <input type="file" id="fileInput" accept=".csv,text/csv">
+    <div class="ticket-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="label" id="dropLabel">Tocca per caricare l'estratto CSV</div>
+      <div class="hint">Sostituisce solo i movimenti nuovi — nessun duplicato</div>
+    </div>
+  </label>
+
+  <div class="stato" id="stato"></div>
 </main>
 
 <div class="overlay" id="overlay">
@@ -910,8 +920,15 @@
           <span class="ea-data">${formatData(p.data)}</span>
           <span class="ea-mid">${formatEuro(p.valorePortafoglio)}</span>
           <span class="ea-guadagno ${cSegno}">${s}${formatEuro(p.guadagno)}</span>
+          <button class="ea-elimina" type="button" data-id="${p.id || ''}" aria-label="Elimina questo valore">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
         </li>`;
     }).join('');
+
+    els.elencoAndamento.querySelectorAll('.ea-elimina').forEach(btn => {
+      btn.addEventListener('click', () => eliminaValoreAndamento(btn.dataset.id));
+    });
 
     if (punti.length < 2) {
       els.chartWrap.innerHTML = '<div class="op-vuoto">Aggiungi un altro valore per vedere il grafico dell\'andamento.</div>';
@@ -919,6 +936,23 @@
     }
 
     els.chartWrap.innerHTML = costruisciGraficoSVG(punti);
+  }
+
+  async function eliminaValoreAndamento(id) {
+    if (!id) return;
+    if (!confirm('Eliminare questo valore?')) return;
+    mostraStato('Elimino…');
+    try {
+      const risp = await chiamaAppsScript('POST', { eliminaSnapshotId: id });
+      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+      nascondiStato();
+      render(risp.riepilogo);
+      renderMovimenti(risp.movimentiCash);
+      renderAndamento(risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
+    } catch (err) {
+      mostraStato(String(err.message || err), 'errore');
+    }
   }
 
   els.btnElencoValori.addEventListener('click', () => {
