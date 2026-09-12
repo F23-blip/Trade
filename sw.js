@@ -11,7 +11,7 @@
 // installata, anche disinstallando e reinstallando l'icona (l'icona è
 // solo una scorciatoia, la cache resta legata al sito, non a quella).
 
-const CACHE_NAME = 'portafoglio-tr-v3';
+const CACHE_NAME = 'portafoglio-tr-v4';
 const FILE_DA_CACHARE = [
   './',
   './index.html',
