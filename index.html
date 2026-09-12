@@ -1,9 +1,6 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <style>html{visibility:hidden}</style>
-  <script src="lock.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portafoglio · TradeRepublic</title>
@@ -109,23 +106,6 @@
     cursor: pointer;
   }
   button.icon-btn:hover { color: var(--text); border-color: var(--gold); }
-
-  .icon-btn.brand-unipol {
-    color: #E4463B;
-    border-color: rgba(228,70,59,0.35);
-  }
-  .icon-btn.brand-unipol:hover {
-    color: #ff6157;
-    border-color: #E4463B;
-  }
-  .icon-btn.brand-intesa {
-    color: #2FC77E;
-    border-color: rgba(47,199,126,0.35);
-  }
-  .icon-btn.brand-intesa:hover {
-    color: #45e494;
-    border-color: #2FC77E;
-  }
 
   .topbar {
     display: flex;
@@ -477,6 +457,77 @@
   }
   .mov-op .mo-importo { flex: none; font-weight: 500; }
 
+  /* ---- andamento / grafico ---- */
+  .ribbon-label { display: flex; justify-content: space-between; align-items: center; }
+  .btn-mini {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--gold);
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .btn-mini:hover { border-color: var(--gold); }
+
+  .snapshot-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .snapshot-form input {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    min-width: 0;
+  }
+  .snapshot-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  .guadagno-wrap {
+    margin-top: 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .guadagno-wrap .k { font-size: 13px; color: var(--muted); }
+  .guadagno-wrap .v { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; }
+  .guadagno-wrap .v.positivo { color: var(--gain); }
+  .guadagno-wrap .v.negativo { color: var(--err); }
+  .guadagno-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  #chartWrap { margin-top: 14px; }
+  #chartWrap svg { display: block; width: 100%; height: auto; }
+  .chart-linea { fill: none; stroke-width: 2; }
+  .chart-punto { stroke: var(--bg); stroke-width: 2; }
+  .chart-area { opacity: 0.12; }
+  .chart-asse-testo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    fill: var(--muted);
+  }
+  .chart-legenda {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .chart-legenda span { display: flex; align-items: center; gap: 5px; }
+  .chart-legenda .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
   /* ---- modale impostazioni ---- */
   .overlay {
     position: fixed;
@@ -562,24 +613,12 @@
       <h1>Riepilogo</h1>
       <p class="sub" id="sottotitolo">Carica l'ultimo estratto per aggiornare</p>
     </div>
-    <div style="display:flex; gap:8px;">
-      <a class="icon-btn brand-unipol" href="unipol.html" aria-label="Unipol" title="Unipol" style="text-decoration:none;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3Z"/>
-        </svg>
-      </a>
-      <a class="icon-btn brand-intesa" href="intesa.html" aria-label="Intesa Sanpaolo" title="Intesa Sanpaolo" style="text-decoration:none;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M3 21h18"/><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>
-        </svg>
-      </a>
-      <button class="icon-btn" id="btnImpostazioni" aria-label="Impostazioni" title="Impostazioni">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64c.6-.24 1.02-.8 1.04-1.44V3a2 2 0 1 1 4 0v.09c.02.64.44 1.2 1.04 1.44.68.28 1.46.14 1.98-.38l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.52.52-.66 1.3-.38 1.98.24.6.8 1.02 1.44 1.04H21a2 2 0 1 1 0 4h-.09c-.64.02-1.2.44-1.44 1.04Z"/>
-        </svg>
-      </button>
-    </div>
+    <button class="icon-btn" id="btnImpostazioni" aria-label="Impostazioni" title="Impostazioni">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64c.6-.24 1.02-.8 1.04-1.44V3a2 2 0 1 1 4 0v.09c.02.64.44 1.2 1.04 1.44.68.28 1.46.14 1.98-.38l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.52.52-.66 1.3-.38 1.98.24.6.8 1.02 1.44 1.04H21a2 2 0 1 1 0 4h-.09c-.64.02-1.2.44-1.44 1.04Z"/>
+      </svg>
+    </button>
   </div>
 
   <label class="dropzone" for="fileInput">
@@ -616,6 +655,30 @@
   <div class="movimenti-wrap" id="movimentiWrap" style="display:none;">
     <div class="ribbon-label" style="margin-top:28px;"><span>MOVIMENTI DI LIQUIDITÀ</span></div>
     <div class="movimenti-grid" id="movimentiGrid"></div>
+  </div>
+
+  <div class="andamento-wrap">
+    <div class="ribbon-label" style="margin-top:28px;">
+      <span>ANDAMENTO</span>
+      <button class="btn-mini" id="btnAggiungiValore" type="button">+ Aggiungi valore</button>
+    </div>
+
+    <div class="snapshot-form" id="snapshotForm" style="display:none;">
+      <input type="number" inputmode="decimal" step="0.01" id="snapshotInput" placeholder="Valore totale, es. 8219,94">
+      <button class="btn primario" id="btnSalvaSnapshot" type="button">Salva</button>
+    </div>
+
+    <div class="guadagno-wrap" id="guadagnoWrap" style="display:none;">
+      <span class="k">Guadagno attuale</span>
+      <span class="v" id="guadagnoValore">€ 0</span>
+      <span class="guadagno-pct" id="guadagnoPct"></span>
+    </div>
+
+    <div id="chartWrap"></div>
+
+    <div class="vuoto" id="andamentoVuoto" style="display:none; margin-top:14px;">
+      Nessun valore ancora. Aggiungi la prima istantanea per iniziare il grafico.
+    </div>
   </div>
 </main>
 
@@ -659,6 +722,15 @@
     vuoto: document.getElementById('vuoto'),
     movimentiWrap: document.getElementById('movimentiWrap'),
     movimentiGrid: document.getElementById('movimentiGrid'),
+    btnAggiungiValore: document.getElementById('btnAggiungiValore'),
+    snapshotForm: document.getElementById('snapshotForm'),
+    snapshotInput: document.getElementById('snapshotInput'),
+    btnSalvaSnapshot: document.getElementById('btnSalvaSnapshot'),
+    guadagnoWrap: document.getElementById('guadagnoWrap'),
+    guadagnoValore: document.getElementById('guadagnoValore'),
+    guadagnoPct: document.getElementById('guadagnoPct'),
+    chartWrap: document.getElementById('chartWrap'),
+    andamentoVuoto: document.getElementById('andamentoVuoto'),
     overlay: document.getElementById('overlay'),
     btnImpostazioni: document.getElementById('btnImpostazioni'),
     btnAnnulla: document.getElementById('btnAnnulla'),
@@ -782,6 +854,74 @@
           <span class="mo-importo">${importo}</span>
         </div>`;
     }).join('');
+  }
+
+  function renderAndamento(andamento) {
+    const punti = Array.isArray(andamento) ? andamento : [];
+
+    if (punti.length === 0) {
+      els.guadagnoWrap.style.display = 'none';
+      els.chartWrap.innerHTML = '';
+      els.andamentoVuoto.style.display = 'block';
+      return;
+    }
+    els.andamentoVuoto.style.display = 'none';
+
+    const ultimo = punti[punti.length - 1];
+    els.guadagnoWrap.style.display = 'flex';
+    const classeSegno = ultimo.guadagno > 0 ? 'positivo' : (ultimo.guadagno < 0 ? 'negativo' : '');
+    const segno = ultimo.guadagno > 0 ? '+' : '';
+    els.guadagnoValore.textContent = segno + formatEuro(ultimo.guadagno);
+    els.guadagnoValore.className = 'v ' + classeSegno;
+    els.guadagnoPct.textContent = (ultimo.guadagnoPct >= 0 ? '+' : '') +
+      (ultimo.guadagnoPct * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + '%';
+
+    if (punti.length < 2) {
+      els.chartWrap.innerHTML = '<div class="op-vuoto">Aggiungi un altro valore per vedere il grafico dell\'andamento.</div>';
+      return;
+    }
+
+    els.chartWrap.innerHTML = costruisciGraficoSVG(punti);
+  }
+
+  function costruisciGraficoSVG(punti) {
+    const W = 340, H = 150, PADL = 4, PADR = 4, PADT = 10, PADB = 20;
+    const tuttiValori = [];
+    punti.forEach(p => { tuttiValori.push(p.totaleInvestito, p.valorePortafoglio); });
+    let min = Math.min(...tuttiValori), max = Math.max(...tuttiValori);
+    if (min === max) { min -= 1; max += 1; }
+    const margine = (max - min) * 0.08;
+    min -= margine; max += margine;
+
+    const xPer = (i) => PADL + (i / (punti.length - 1)) * (W - PADL - PADR);
+    const yPer = (v) => PADT + (1 - (v - min) / (max - min)) * (H - PADT - PADB);
+
+    const lineaInvestito = punti.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xPer(i).toFixed(1)} ${yPer(p.totaleInvestito).toFixed(1)}`).join(' ');
+    const lineaValore = punti.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xPer(i).toFixed(1)} ${yPer(p.valorePortafoglio).toFixed(1)}`).join(' ');
+    const areaValore = lineaValore +
+      ` L ${xPer(punti.length - 1).toFixed(1)} ${(H - PADB).toFixed(1)}` +
+      ` L ${xPer(0).toFixed(1)} ${(H - PADB).toFixed(1)} Z`;
+
+    const puntiInvestito = punti.map((p, i) => `<circle class="chart-punto" cx="${xPer(i).toFixed(1)}" cy="${yPer(p.totaleInvestito).toFixed(1)}" r="2.6" fill="var(--gold)"/>`).join('');
+    const puntiValore = punti.map((p, i) => `<circle class="chart-punto" cx="${xPer(i).toFixed(1)}" cy="${yPer(p.valorePortafoglio).toFixed(1)}" r="2.6" fill="var(--gain)"/>`).join('');
+
+    const primaData = formatData(punti[0].data);
+    const ultimaData = formatData(punti[punti.length - 1].data);
+
+    return `
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Andamento di totale investito e valore di portafoglio nel tempo">
+        <path d="${areaValore}" class="chart-area" fill="var(--gain)"/>
+        <path d="${lineaInvestito}" class="chart-linea" stroke="var(--gold)"/>
+        <path d="${lineaValore}" class="chart-linea" stroke="var(--gain)"/>
+        ${puntiInvestito}
+        ${puntiValore}
+        <text class="chart-asse-testo" x="${PADL}" y="${H - 4}">${primaData}</text>
+        <text class="chart-asse-testo" x="${W - PADR}" y="${H - 4}" text-anchor="end">${ultimaData}</text>
+      </svg>
+      <div class="chart-legenda">
+        <span><span class="dot" style="background:var(--gold)"></span>Investito</span>
+        <span><span class="dot" style="background:var(--gain)"></span>Valore reale</span>
+      </div>`;
   }
 
   function render(riepilogo) {
@@ -910,9 +1050,9 @@
     return res.json();
   }
 
-  function salvaCache(riepilogo, movimentiCash) {
+  function salvaCache(riepilogo, movimentiCash, andamento) {
     try {
-      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, movimentiCash, ts: Date.now() }));
+      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, movimentiCash, andamento, ts: Date.now() }));
     } catch (err) { /* storage pieno o non disponibile: non blocca nulla */ }
   }
 
@@ -936,7 +1076,8 @@
       nascondiStato();
       render(risp.riepilogo);
       renderMovimenti(risp.movimentiCash);
-      salvaCache(risp.riepilogo, risp.movimentiCash);
+      renderAndamento(risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       // In sottofondo non mostriamo errore: resta visibile quanto già in cache.
@@ -957,13 +1098,43 @@
       mostraStato(n > 0 ? `Importate ${n} righe nuove.` : 'Nessuna riga nuova: già tutto aggiornato.', 'ok');
       render(risp.riepilogo);
       renderMovimenti(risp.movimentiCash);
-      salvaCache(risp.riepilogo, risp.movimentiCash);
+      renderAndamento(risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       mostraStato(String(err.message || err), 'errore');
     } finally {
       els.fileInput.value = '';
       els.dropLabel.textContent = "Tocca per caricare l'estratto CSV";
+    }
+  });
+
+  els.btnAggiungiValore.addEventListener('click', () => {
+    const aperto = els.snapshotForm.style.display !== 'none';
+    els.snapshotForm.style.display = aperto ? 'none' : 'flex';
+    if (!aperto) els.snapshotInput.focus();
+  });
+
+  els.btnSalvaSnapshot.addEventListener('click', async () => {
+    const valStr = els.snapshotInput.value.replace(',', '.').trim();
+    const valore = parseFloat(valStr);
+    if (!valStr || isNaN(valore)) {
+      mostraStato('Inserisci un numero valido.', 'errore');
+      return;
+    }
+    mostraStato('Salvo il valore…');
+    try {
+      const risp = await chiamaAppsScript('POST', { valorePortafoglio: valore });
+      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+      mostraStato('Valore salvato.', 'ok');
+      render(risp.riepilogo);
+      renderMovimenti(risp.movimentiCash);
+      renderAndamento(risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
+      els.snapshotForm.style.display = 'none';
+      els.snapshotInput.value = '';
+    } catch (err) {
+      mostraStato(String(err.message || err), 'errore');
     }
   });
 
@@ -979,6 +1150,7 @@
     if (cache && cache.riepilogo) {
       render(cache.riepilogo);
       renderMovimenti(cache.movimentiCash);
+      renderAndamento(cache.andamento);
       const minutiFa = Math.round((Date.now() - cache.ts) / 60000);
       els.sottotitolo.textContent = minutiFa < 1 ? 'Aggiornato ora' : `Aggiornato ${minutiFa} min fa`;
       caricaRiepilogo(true); // refresh silenzioso
