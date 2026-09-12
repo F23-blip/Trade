@@ -909,7 +909,7 @@
     els.guadagnoValore.textContent = segno + formatEuro(ultimo.guadagno);
     els.guadagnoValore.className = 'v ' + classeSegno;
     els.guadagnoPct.textContent = (ultimo.guadagnoPct >= 0 ? '+' : '') +
-      (ultimo.guadagnoPct * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 }) + '%';
+   (ultimo.guadagnoPct * 100).toLocaleString('it-IT', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + '%';
 
     els.btnElencoValori.style.display = 'inline-block';
     els.elencoAndamento.innerHTML = punti.slice().reverse().map(p => {
