@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -41,6 +42,7 @@
   }
   body { min-height: 100vh; display: flex; justify-content: center; padding: 24px 16px 64px; }
   main { width: 100%; max-width: 560px; }
+
   a.back {
     display: inline-flex; align-items: center; gap: 6px;
     color: var(--muted); text-decoration: none;
@@ -48,43 +50,54 @@
     margin-bottom: 14px;
   }
   a.back:hover { color: var(--gold); }
+
   .topbar { display: flex; justify-content: space-between; align-items: flex-start; }
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--gold); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    color: #2FC77E; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
   }
   .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gain); animation: pulse 2.4s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
   h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
   .sub { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
-  .toolbar { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
-  .btn {
-    font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 12.5px;
-    padding: 8px 13px; border-radius: 8px; border: 1px solid var(--line);
-    background: transparent; color: var(--text); cursor: pointer;
+
+  .icon-btn {
+    background: none; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 10px; width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
   }
-  .btn.primario { background: var(--gold); border-color: var(--gold); color: #1a1408; }
-  .btn.pericolo { color: var(--err); border-color: var(--line); }
-  .btn:hover { border-color: var(--gold); }
-  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .icon-btn:hover { color: var(--text); border-color: var(--gold); }
+
+  /* ---- riepilogo totale ---- */
+  .totale {
+    margin-top: 6px; display: flex; align-items: baseline; justify-content: space-between;
+    border-bottom: 1px solid var(--line); padding-bottom: 14px; gap: 10px; flex-wrap: wrap;
+  }
+  .totale .k { font-size: 13px; color: var(--muted); }
+  .totale .v { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; }
+  .totale .d { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .positivo { color: var(--gain); }
+  .negativo { color: var(--err); }
+
+  /* ---- card ---- */
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
-  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
   .card-head .nome { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; }
   .tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
   .tag.gp { background: rgba(201,162,75,0.16); color: var(--gold); }
   .tag.da { background: rgba(47,163,107,0.16); color: var(--gain); }
   .tag.isp { background: rgba(139,147,167,0.2); color: var(--text); }
-  .meta { font-size: 12px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; margin-bottom: 16px; }
+
   .kpi-row { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
   .kpi .k { font-size: 11.5px; color: var(--muted); }
   .kpi .v { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; }
-  .kpi .v.positivo { color: var(--gain); }
-  .kpi .v.negativo { color: var(--err); }
   .kpi .d { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .chart-wrap { position: relative; height: 170px; margin-bottom: 14px; }
+
+  .chart-wrap { position: relative; height: 170px; margin-bottom: 8px; }
   .chart-empty { color: var(--muted); font-size: 12.5px; text-align: center; padding: 30px 10px; }
-  details.storico { margin-bottom: 16px; }
+
+  details.storico { margin-top: 8px; }
   details.storico summary {
     cursor: pointer; font-size: 12.5px; color: var(--muted);
     font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.03em; padding: 4px 0; list-style: none;
@@ -92,28 +105,80 @@
   details.storico summary::-webkit-details-marker { display: none; }
   details.storico summary:before { content: '▸ '; color: var(--gold); }
   details.storico[open] summary:before { content: '▾ '; }
+
   table.tbl { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
   table.tbl th { text-align: right; color: var(--muted); font-weight: 500; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; padding: 4px 6px; border-bottom: 1px dashed var(--line); }
   table.tbl th:first-child, table.tbl td:first-child { text-align: left; }
   table.tbl td { text-align: right; padding: 5px 6px; font-family: 'IBM Plex Mono', monospace; border-bottom: 1px dashed var(--line); color: var(--text); }
   table.tbl tr:last-child td { border-bottom: none; }
+  table.tbl td.nome-pos { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  table.tbl .col-import { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
+  /* Su schermo stretto la colonna "Importato" esce: la nascondo, il dato
+     resta comunque visibile nel riepilogo in alto. */
+  @media (max-width: 430px) {
+    table.tbl .col-import { display: none; }
+  }
   .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
   .del-btn:hover { color: var(--err); }
-  form.add-form { border-top: 1px dashed var(--line); padding-top: 14px; }
-  form.add-form .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  form.add-form label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 5px; }
-  form.add-form input {
-    width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text);
-    border-radius: 8px; padding: 8px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+
+  /* ---- dropzone ---- */
+  .dropzone {
+    position: relative; border: 1.5px dashed var(--line); border-radius: var(--radius);
+    padding: 22px 18px; background: var(--panel);
+    display: flex; align-items: center; gap: 14px; cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    margin-top: 28px;
   }
-  form.add-form input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
-  .form-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .form-hint { font-size: 11px; color: var(--muted); }
-  .stato-inline { font-size: 12px; margin-top: 8px; display: none; }
-  .stato-inline.visibile { display: block; }
-  .stato-inline.ok { color: var(--gain); }
-  .stato-inline.errore { color: var(--err); }
-  input[type="file"].hidden-file { display: none; }
+  .dropzone:hover, .dropzone:focus-within { border-color: var(--gold); background: var(--panel-2); }
+  .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .dropzone .ticket-mark {
+    width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--panel-2);
+    display: flex; align-items: center; justify-content: center; color: var(--gold);
+  }
+  .dropzone .label { font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 15px; }
+  .dropzone .hint { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+  .stato { margin-top: 18px; font-size: 13px; color: var(--muted); display: none; }
+  .stato.visibile { display: block; }
+  .stato.errore { color: var(--err); }
+  .stato.ok { color: var(--gain); }
+
+  .vuoto {
+    margin-top: 20px; text-align: center; color: var(--muted); font-size: 13.5px;
+    padding: 20px 10px; border: 1px dashed var(--line); border-radius: var(--radius);
+  }
+
+  .sezione-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+    letter-spacing: 0.04em; margin: 28px 0 8px;
+  }
+
+  /* ---- modale impostazioni ---- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(5,8,15,0.72);
+    display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10;
+  }
+  .overlay.aperto { display: flex; }
+  .modale { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; width: 100%; max-width: 360px; }
+  .modale h2 { font-family: 'Space Grotesk', sans-serif; font-size: 17px; margin: 0 0 6px; }
+  .modale p { color: var(--muted); font-size: 12.5px; margin: 0 0 16px; line-height: 1.5; }
+  .modale label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .modale input[type="text"], .modale input[type="password"] {
+    width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 10px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin-bottom: 14px;
+  }
+  .modale input:focus, .dropzone:focus-within, button:focus-visible, .icon-btn:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 2px;
+  }
+  .modale-azioni { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn {
+    font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; font-size: 13.5px;
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
+    background: transparent; color: var(--text); cursor: pointer;
+  }
+  .btn.primario { background: var(--gold); border-color: var(--gold); color: #1a1408; }
+  .btn:hover { border-color: var(--gold); }
 </style>
 </head>
 <body>
@@ -127,225 +192,503 @@
   <div class="topbar">
     <div>
       <div class="eyebrow"><span class="dot"></span>INTESA SANPAOLO</div>
-      <h1>Gestioni &amp; Depositi</h1>
-      <p class="sub">Dati inseriti a mano dagli estratti Intesa</p>
+      <h1>Patrimonio</h1>
+      <p class="sub" id="sottotitolo">Carica l'export patrimonio per aggiornare</p>
+    </div>
+    <button class="icon-btn" id="btnImpostazioni" aria-label="Impostazioni" title="Impostazioni">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64c.6-.24 1.02-.8 1.04-1.44V3a2 2 0 1 1 4 0v.09c.02.64.44 1.2 1.04 1.44.68.28 1.46.14 1.98-.38l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.52.52-.66 1.3-.38 1.98.24.6.8 1.02 1.44 1.04H21a2 2 0 1 1 0 4h-.09c-.64.02-1.2.44-1.44 1.04Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="totale" id="totaleWrap" style="display:none;">
+    <div>
+      <span class="k">Totale controvalore</span>
+      <div class="v" id="totaleValore">€ 0</div>
+      <div class="d" id="totaleDettaglio"></div>
+    </div>
+    <div style="text-align:right;">
+      <span class="k">Ultimo dato</span>
+      <div class="v" style="font-size:16px;" id="totaleData">—</div>
+      <div class="d" id="totaleImport"></div>
     </div>
   </div>
 
-  <div class="toolbar">
-    <button class="btn" id="btnEsporta">Esporta dati (JSON)</button>
-    <button class="btn" id="btnImporta">Importa dati</button>
-    <input type="file" id="fileImporta" class="hidden-file" accept="application/json">
-    <button class="btn pericolo" id="btnReset">Ripristina dati iniziali</button>
+  <div id="cards"></div>
+
+  <div class="vuoto" id="vuoto" style="display:none;">
+    Nessun dato ancora. Carica il primo export per vedere il patrimonio.
   </div>
 
-  <div id="cards"></div>
+  <div id="posizioniWrap" style="display:none;">
+    <div class="sezione-label"><span>POSIZIONI</span><span id="posizioniData"></span></div>
+    <div class="card" id="posizioniCard"></div>
+  </div>
+
+  <label class="dropzone" for="fileInput">
+    <input type="file" id="fileInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    <div class="ticket-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="label" id="dropLabel">Tocca per caricare l'export patrimonio</div>
+      <div class="hint">File Excel scaricato da Intesa — nessun duplicato</div>
+    </div>
+  </label>
+
+  <div class="stato" id="stato"></div>
 </main>
+
+<div class="overlay" id="overlay">
+  <div class="modale">
+    <h2>Codice di accesso</h2>
+    <p>Gli stessi codice e URL usati dalla pagina principale. Restano salvati solo su questo telefono/browser.</p>
+    <label for="tokenInput">Codice</label>
+    <input type="password" id="tokenInput" autocomplete="off">
+    <label for="urlInput">URL Apps Script (Web App)</label>
+    <input type="text" id="urlInput" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
+    <div class="modale-azioni">
+      <button class="btn" id="btnAnnulla">Annulla</button>
+      <button class="btn primario" id="btnSalva">Salva</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function () {
-  const LS_KEY = 'intesa_readings_v1';
+  // Stesse chiavi di index.html: configurando una pagina si configura anche l'altra.
+  const LS_TOKEN = 'tr_token';
+  const LS_URL = 'tr_apps_script_url';
+  const LS_CACHE = 'intesa_cache';
+
+  const DEFAULT_TOKEN = '!Ventitre23!';
+  const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyFc82gReP2ZCuXS-2kVy4_hkeaK_-tA2jLXMuOuL9tjBYo3Z2GXPvr9-7BAcky9zY/exec';
 
   const PRODUCTS = [
-    {
-      id: 'gestione_patrimoniale',
-      nome: 'Gestione Patrimoniale',
-      tag: 'gp',
-      valueField: 'controvalore',
-      valueLabel: 'Controvalore',
-      rateField: 'upGestPatr',
-      rateLabel: 'Utile/Perdita',
-      fields: [
-        { key: 'controvalore', label: 'Controvalore (€)', step: '0.01' },
-        { key: 'upGestPatr', label: 'Utile/Perdita (%)', step: '0.01' }
-      ]
-    },
-    {
-      id: 'deposito_amministrativo',
-      nome: 'Deposito Amministrativo',
-      tag: 'da',
-      valueField: 'controvalore',
-      valueLabel: 'Controvalore',
-      rateField: 'upDepAmm',
-      rateLabel: 'Utile/Perdita',
-      fields: [
-        { key: 'controvalore', label: 'Controvalore (€)', step: '0.01' },
-        { key: 'utilePerdita', label: 'Utile/Perdita (€)', step: '0.01' },
-        { key: 'upDepAmm', label: 'Utile/Perdita (%)', step: '0.01' }
-      ]
-    },
-    {
-      id: 'deposito_isp',
-      nome: 'Deposito ISP',
-      tag: 'isp',
-      valueField: 'controvalore',
-      valueLabel: 'Controvalore',
-      fields: [
-        { key: 'controvalore', label: 'Controvalore (€)', step: '0.01' }
-      ]
-    }
+    { id: 'deposito_amministrativo', nome: 'Deposito Amministrativo', tag: 'da' },
+    { id: 'gestione_patrimoniale',   nome: 'Gestione Patrimoniale',   tag: 'gp' },
+    { id: 'deposito_isp',            nome: 'Deposito ISP',            tag: 'isp' }
   ];
-
-  // Dati storici ricavati dall'estratto Intesa caricato.
-  const SEED = {"gestione_patrimoniale":[{"data":"20/03/2025","controvalore":100000.0,"upGestPatr":0.6},{"data":"13/06/2025","controvalore":101547.25,"upGestPatr":1.55},{"data":"16/06/2025","controvalore":101236.42,"upGestPatr":1.24},{"data":"18/06/2025","controvalore":101183.21,"upGestPatr":1.18},{"data":"20/06/2025","controvalore":100921.62,"upGestPatr":0.92},{"data":"23/06/2025","controvalore":100860.59,"upGestPatr":0.86},{"data":"26/06/2025","controvalore":101095.05,"upDepAmm":0.0,"upGestPatr":1.1},{"data":"30/06/2025","controvalore":101115.01,"upDepAmm":0.0,"upGestPatr":1.12},{"data":"02/07/2025","controvalore":100914.7,"upDepAmm":0.0,"upGestPatr":0.91},{"data":"07/07/2025","controvalore":100986.62,"upDepAmm":0.0,"upGestPatr":0.99},{"data":"10/07/2025","controvalore":101042.41,"upDepAmm":0.0,"upGestPatr":1.04},{"data":"15/07/2025","controvalore":100928.05,"upDepAmm":0.0,"upGestPatr":0.93},{"data":"22/07/2025","controvalore":101282.8,"upDepAmm":0.0,"upGestPatr":1.28},{"data":"25/07/2025","controvalore":101236.33,"upDepAmm":0.0,"upGestPatr":1.24},{"data":"31/07/2025","controvalore":101325.57,"upDepAmm":0.0,"upGestPatr":1.33},{"data":"07/08/2025","controvalore":101315.79,"upDepAmm":0.0,"upGestPatr":1.32},{"data":"11/08/2025","controvalore":101421.52,"upDepAmm":0.0,"upGestPatr":1.42},{"data":"15/08/2025","controvalore":101755.19,"upDepAmm":0.0,"upGestPatr":1.76},{"data":"18/08/2025","controvalore":101574.43,"upDepAmm":0.0,"upGestPatr":1.57},{"data":"21/08/2025","controvalore":101938.31,"upDepAmm":0.0,"upGestPatr":1.94},{"data":"22/08/2025","controvalore":101770.06,"upDepAmm":0.0,"upGestPatr":1.77},{"data":"25/08/2025","controvalore":101961.74,"upDepAmm":0.0,"upGestPatr":1.96},{"data":"27/08/2025","controvalore":101790.95,"upDepAmm":0.0,"upGestPatr":1.79},{"data":"01/09/2025","controvalore":101576.27,"upDepAmm":0.0,"upGestPatr":1.58},{"data":"03/09/2025","controvalore":101458.63,"upDepAmm":0.0,"upGestPatr":1.46},{"data":"04/09/2025","controvalore":101206.63,"upDepAmm":0.0,"upGestPatr":1.21},{"data":"05/09/2025","controvalore":101450.31,"upDepAmm":0.0,"upGestPatr":1.45},{"data":"08/09/2025","controvalore":101703.44,"upDepAmm":0.0,"upGestPatr":1.7},{"data":"10/09/2025","controvalore":101837.97,"upDepAmm":0.0,"upGestPatr":1.84},{"data":"12/09/2025","controvalore":101959.22,"upDepAmm":0.0,"upGestPatr":1.96},{"data":"15/09/2025","controvalore":101876.96,"upDepAmm":0.0,"upGestPatr":1.88},{"data":"19/09/2025","controvalore":101852.03,"upDepAmm":0.0,"upGestPatr":1.85},{"data":"25/09/2025","controvalore":101917.73,"upDepAmm":0.0,"upGestPatr":1.92},{"data":"30/09/2025","controvalore":102004.86,"upDepAmm":0.0,"upGestPatr":2.0},{"data":"03/10/2025","controvalore":102114.33,"upDepAmm":0.0,"upGestPatr":2.11},{"data":"06/10/2025","controvalore":102186.25,"upDepAmm":0.0,"upGestPatr":2.19},{"data":"09/10/2025","controvalore":102347.13,"upDepAmm":0.0,"upGestPatr":2.35},{"data":"13/10/2025","controvalore":102255.97,"upDepAmm":0.0,"upGestPatr":2.26},{"data":"16/10/2025","controvalore":102464.26,"upDepAmm":0.0,"upGestPatr":2.46},{"data":"17/10/2025","controvalore":102599.53,"upDepAmm":0.0,"upGestPatr":2.6},{"data":"20/10/2025","controvalore":102504.13,"upDepAmm":0.0,"upGestPatr":2.5},{"data":"23/10/2025","controvalore":102749.39,"upDepAmm":0.0,"upGestPatr":2.75},{"data":"29/10/2025","controvalore":102841.75,"upDepAmm":0.0,"upGestPatr":2.84},{"data":"03/11/2025","controvalore":102836.09,"upDepAmm":0.0,"upGestPatr":2.84},{"data":"07/11/2025","controvalore":102618.6,"upDepAmm":0.0,"upGestPatr":2.62},{"data":"11/11/2025","controvalore":102623.83,"upDepAmm":0.0,"upGestPatr":2.62},{"data":"13/11/2025","controvalore":103185.6,"upDepAmm":0.0,"upGestPatr":3.19},{"data":"24/11/2025","controvalore":102302.68,"upDepAmm":0.0,"upGestPatr":2.3},{"data":"03/12/2025","controvalore":102830.07,"upDepAmm":0.0,"upGestPatr":2.83},{"data":"04/12/2025","controvalore":102936.01,"upDepAmm":0.0,"upGestPatr":2.94},{"data":"30/12/2025","controvalore":103306.95,"upDepAmm":0.0,"upGestPatr":3.31},{"data":"31/12/2025","controvalore":103502.25,"upDepAmm":0.0,"upGestPatr":3.5},{"data":"31/01/2026","controvalore":103861.51,"upDepAmm":0.0,"upGestPatr":3.86},{"data":"04/02/2026","controvalore":103942.24,"upDepAmm":0.0,"upGestPatr":3.94},{"data":"14/02/2026","controvalore":104399.0,"upDepAmm":0.0,"upGestPatr":4.4},{"data":"08/03/2026","controvalore":103367.87,"upDepAmm":0.0,"upGestPatr":3.37},{"data":"13/03/2026","controvalore":102781.58,"upDepAmm":0.0,"upGestPatr":2.78},{"data":"16/03/2026","controvalore":102377.39,"upDepAmm":0.0,"upGestPatr":2.38},{"data":"23/03/2026","controvalore":101851.3,"upDepAmm":0.0,"upGestPatr":1.85},{"data":"04/04/2026","controvalore":101459.63,"upDepAmm":0.0,"upGestPatr":1.46},{"data":"10/04/2026","controvalore":102357.0,"upDepAmm":0.0,"upGestPatr":2.36},{"data":"17/04/2026","controvalore":103050.83,"upDepAmm":0.0,"upGestPatr":3.05},{"data":"23/04/2026","controvalore":103440.44,"upDepAmm":0.0,"upGestPatr":3.44},{"data":"28/04/2026","controvalore":103273.3,"upDepAmm":0.0,"upGestPatr":3.27},{"data":"30/04/2026","controvalore":102800.99,"upDepAmm":0.0,"upGestPatr":2.8},{"data":"08/05/2026","controvalore":104120.77,"upDepAmm":0.0,"upGestPatr":4.12},{"data":"14/05/2026","controvalore":103869.99,"upDepAmm":0.0,"upGestPatr":3.87},{"data":"19/05/2026","controvalore":103931.37,"upDepAmm":0.0,"upGestPatr":3.93},{"data":"27/05/2026","controvalore":104857.89,"upDepAmm":0.0,"upGestPatr":4.86},{"data":"30/05/2026","controvalore":105411.74,"upDepAmm":0.0,"upGestPatr":5.41},{"data":"05/06/2026","controvalore":105458.79,"upDepAmm":0.0,"upGestPatr":5.46},{"data":"11/06/2026","controvalore":104914.4,"upDepAmm":0.0,"upGestPatr":4.91},{"data":"19/06/2026","controvalore":106187.46,"upDepAmm":0.0,"upGestPatr":6.19},{"data":"25/06/2026","controvalore":106441.4,"upDepAmm":0.0,"upGestPatr":6.44},{"data":"02/07/2026","controvalore":106645.84,"upDepAmm":0.0,"upGestPatr":6.65},{"data":"09/07/2026","controvalore":106403.93,"upDepAmm":0.0,"upGestPatr":6.4},{"data":"17/07/2026","controvalore":105932.82,"upDepAmm":0.0,"upGestPatr":5.93},{"data":"25/07/2026","controvalore":105251.36,"upDepAmm":0.0,"upGestPatr":5.25},{"data":"06/08/2026","controvalore":106442.51,"upDepAmm":0.0,"upGestPatr":6.44},{"data":"14/08/2026","controvalore":106819.05,"upDepAmm":0.0,"upGestPatr":6.82},{"data":"24/08/2026","controvalore":105781.56,"upDepAmm":0.0,"upGestPatr":5.78},{"data":"05/09/2026","controvalore":105538.23,"upDepAmm":0.0,"upGestPatr":5.54}],"deposito_amministrativo":[{"data":"01/01/2025","controvalore":110000.0,"upDepAmm":0.66},{"data":"13/06/2025","controvalore":110922.96,"utilePerdita":799.68,"upDepAmm":0.73},{"data":"16/06/2025","controvalore":110877.59,"upDepAmm":0.68},{"data":"18/06/2025","controvalore":110881.41,"utilePerdita":758.15,"upDepAmm":0.69},{"data":"20/06/2025","controvalore":112512.9,"utilePerdita":723.16,"upDepAmm":0.66},{"data":"23/06/2025","controvalore":112536.85,"utilePerdita":747.11,"upDepAmm":0.68,"upGestPatr":2.31},{"data":"26/06/2025","controvalore":112693.04,"upDepAmm":0.82,"upGestPatr":2.45},{"data":"01/07/2025","controvalore":111089.0,"upDepAmm":0.86,"upGestPatr":0.99},{"data":"02/07/2025","controvalore":111139.38,"utilePerdita":996.76,"upDepAmm":0.9,"upGestPatr":1.04},{"data":"07/07/2025","controvalore":136207.11,"utilePerdita":1064.49,"upDepAmm":0.97,"upGestPatr":23.82},{"data":"10/07/2025","controvalore":111188.12,"utilePerdita":851.6,"upDepAmm":0.77,"upGestPatr":-17.64},{"data":"15/07/2025","controvalore":111153.26,"utilePerdita":816.74,"upDepAmm":0.74,"upGestPatr":-17.66},{"data":"22/07/2025","controvalore":112936.17,"utilePerdita":933.14,"upDepAmm":0.85,"upGestPatr":2.67},{"data":"25/07/2025","controvalore":113007.2,"utilePerdita":1004.15,"upDepAmm":0.91,"upGestPatr":2.73},{"data":"31/07/2025","controvalore":111428.48,"utilePerdita":1064.94,"upDepAmm":0.96,"upGestPatr":1.3},{"data":"07/08/2025","controvalore":111466.09,"utilePerdita":1102.54,"upDepAmm":1.0,"upGestPatr":1.33},{"data":"11/08/2025","controvalore":111507.51,"utilePerdita":1143.95,"upDepAmm":1.04,"upGestPatr":1.37},{"data":"17/08/2025","controvalore":111690.46,"utilePerdita":1326.89,"upDepAmm":1.2,"upGestPatr":1.54},{"data":"18/08/2025","controvalore":111683.06,"utilePerdita":1319.51,"upDepAmm":1.2,"upGestPatr":1.53},{"data":"21/08/2025","controvalore":113396.36,"utilePerdita":1366.37,"upDepAmm":1.24,"upGestPatr":3.09},{"data":"22/08/2025","controvalore":113396.36,"utilePerdita":1366.37,"upDepAmm":1.24,"upGestPatr":3.09},{"data":"25/08/2025","controvalore":111692.57,"utilePerdita":1299.42,"upDepAmm":1.18,"upGestPatr":1.54},{"data":"27/08/2025","controvalore":111637.04,"utilePerdita":1244.17,"upDepAmm":1.13,"upGestPatr":1.49},{"data":"01/09/2025","controvalore":111598.35,"utilePerdita":1205.48,"upDepAmm":1.09,"upGestPatr":1.45},{"data":"03/09/2025","controvalore":111565.09,"utilePerdita":1172.23,"upDepAmm":1.06,"upGestPatr":1.42},{"data":"05/09/2025","controvalore":111455.12,"utilePerdita":1062.24,"upDepAmm":0.96,"upGestPatr":1.32},{"data":"05/09/2025","controvalore":111556.31,"utilePerdita":1163.43,"upDepAmm":1.05,"upGestPatr":1.41},{"data":"08/09/2025","controvalore":111652.93,"utilePerdita":1260.06,"upDepAmm":1.14,"upGestPatr":1.5},{"data":"10/09/2025","controvalore":111759.11,"utilePerdita":1366.23,"upDepAmm":1.24,"upGestPatr":1.6},{"data":"12/09/2025","controvalore":111790.29,"utilePerdita":1397.42,"upDepAmm":1.27,"upGestPatr":1.63},{"data":"15/09/2025","controvalore":111819.45,"utilePerdita":1426.56,"upDepAmm":1.29,"upGestPatr":1.65},{"data":"19/09/2025","controvalore":113628.67,"utilePerdita":1569.26,"upDepAmm":1.42,"upGestPatr":3.3},{"data":"25/09/2025","controvalore":113648.45,"utilePerdita":1589.05,"upDepAmm":1.44,"upGestPatr":3.32},{"data":"30/09/2025","controvalore":111972.43,"utilePerdita":1549.82,"upDepAmm":1.4,"upGestPatr":1.79},{"data":"04/10/2025","controvalore":112133.47,"utilePerdita":1710.86,"upDepAmm":1.55,"upGestPatr":1.94},{"data":"07/10/2025","controvalore":112252.6,"utilePerdita":1829.97,"upDepAmm":1.66,"upGestPatr":2.05},{"data":"09/10/2025","controvalore":112277.56,"utilePerdita":1854.96,"upDepAmm":1.68,"upGestPatr":2.07},{"data":"13/10/2025","controvalore":112103.36,"utilePerdita":1680.76,"upDepAmm":1.52,"upGestPatr":1.91},{"data":"16/10/2025","controvalore":112266.02,"utilePerdita":1843.43,"upDepAmm":1.67,"upGestPatr":2.06},{"data":"17/10/2025","controvalore":112266.02,"utilePerdita":1843.43,"upDepAmm":1.67,"upGestPatr":2.06},{"data":"20/10/2025","controvalore":113937.81,"utilePerdita":1848.71,"upDepAmm":1.67,"upGestPatr":3.58},{"data":"23/10/2025","controvalore":114109.48,"utilePerdita":2020.37,"upDepAmm":1.83,"upGestPatr":3.74},{"data":"29/10/2025","controvalore":112612.24,"utilePerdita":2151.97,"upDepAmm":1.95,"upGestPatr":2.37},{"data":"03/11/2025","controvalore":112531.58,"utilePerdita":2071.32,"upDepAmm":1.88,"upGestPatr":2.3},{"data":"07/11/2025","controvalore":112425.73,"utilePerdita":1965.48,"upDepAmm":1.78,"upGestPatr":2.21},{"data":"11/11/2025","controvalore":112275.47,"utilePerdita":1815.22,"upDepAmm":1.64,"upGestPatr":2.07},{"data":"13/11/2025","controvalore":112659.97,"utilePerdita":2199.72,"upDepAmm":1.99,"upGestPatr":2.42},{"data":"24/11/2025","controvalore":112241.68,"utilePerdita":1742.39,"upDepAmm":1.58,"upGestPatr":2.04},{"data":"03/12/2025","controvalore":96952.49,"utilePerdita":1747.57,"upDepAmm":1.84,"upGestPatr":-11.86},{"data":"05/12/2025","controvalore":97023.28,"utilePerdita":1818.37,"upDepAmm":1.91,"upGestPatr":-11.8},{"data":"30/12/2025","controvalore":112105.39,"utilePerdita":1870.75,"upDepAmm":1.72,"upGestPatr":1.91},{"data":"31/12/2025","controvalore":112276.49,"utilePerdita":2049.18,"upDepAmm":1.86,"upGestPatr":2.07},{"data":"31/01/2026","controvalore":112349.62,"utilePerdita":2083.74,"upDepAmm":1.89,"upGestPatr":2.14},{"data":"04/02/2026","controvalore":112492.5,"utilePerdita":2226.68,"upDepAmm":2.02,"upGestPatr":2.27},{"data":"14/02/2026","controvalore":112485.83,"utilePerdita":2016.24,"upDepAmm":1.83,"upGestPatr":2.26},{"data":"08/03/2026","controvalore":125567.62,"utilePerdita":52.61,"upDepAmm":0.0,"upGestPatr":14.15},{"data":"13/03/2026","controvalore":124366.58,"utilePerdita":-1178.16,"upDepAmm":0.0,"upGestPatr":13.06},{"data":"16/03/2026","controvalore":124097.73,"utilePerdita":-1416.88,"upDepAmm":0.0,"upGestPatr":12.82},{"data":"21/03/2026","controvalore":123524.3,"utilePerdita":-2439.76,"upDepAmm":0.0,"upGestPatr":12.29},{"data":"04/04/2026","controvalore":122635.43,"utilePerdita":-2953.48,"upDepAmm":-2.35,"upGestPatr":11.49},{"data":"10/04/2026","controvalore":124003.03,"utilePerdita":-1585.78,"upDepAmm":-1.26,"upGestPatr":12.73},{"data":"17/04/2026","controvalore":125001.28,"utilePerdita":-588.13,"upDepAmm":-0.47,"upGestPatr":13.64},{"data":"23/04/2026","controvalore":125192.5,"utilePerdita":-396.61,"upDepAmm":-0.32,"upGestPatr":13.81},{"data":"28/04/2026","controvalore":124874.0,"utilePerdita":-714.38,"upDepAmm":-0.57,"upGestPatr":1035.22},{"data":"30/04/2026","controvalore":124419.28,"utilePerdita":-1170.13,"upDepAmm":-0.93,"upGestPatr":13.11},{"data":"08/05/2026","controvalore":126057.77,"utilePerdita":462.81,"upDepAmm":0.37,"upGestPatr":14.6},{"data":"14/05/2026","controvalore":125447.19,"utilePerdita":-142.22,"upDepAmm":-0.11,"upGestPatr":14.04},{"data":"19/05/2026","controvalore":125400.24,"upDepAmm":-0.15,"upGestPatr":14.0},{"data":"27/05/2026","controvalore":126289.98,"utilePerdita":619.82,"upDepAmm":0.49,"upGestPatr":14.81},{"data":"30/05/2026","controvalore":127001.0,"utilePerdita":1330.86,"upDepAmm":1.06,"upGestPatr":15.46},{"data":"05/06/2026","controvalore":126962.03,"utilePerdita":1291.89,"upDepAmm":1.03,"upGestPatr":15.42},{"data":"11/06/2026","controvalore":126437.3,"utilePerdita":767.16,"upDepAmm":0.61,"upGestPatr":14.94},{"data":"19/06/2026","controvalore":127802.1,"utilePerdita":2131.96,"upDepAmm":1.7,"upGestPatr":16.18},{"data":"25/06/2026","controvalore":128200.85,"utilePerdita":2530.71,"upDepAmm":2.01,"upGestPatr":16.55},{"data":"02/07/2026","controvalore":127552.5,"utilePerdita":1934.83,"upDepAmm":1.61,"upGestPatr":15.96},{"data":"09/07/2026","controvalore":127101.44,"utilePerdita":1651.71,"upDepAmm":1.32,"upGestPatr":15.55},{"data":"17/07/2026","controvalore":126661.67,"utilePerdita":1211.94,"upDepAmm":0.97,"upGestPatr":15.15},{"data":"25/07/2026","controvalore":126286.23,"utilePerdita":836.5,"upDepAmm":0.67,"upGestPatr":14.81},{"data":"06/08/2026","controvalore":127464.29,"utilePerdita":2014.56,"upDepAmm":1.61,"upGestPatr":15.88},{"data":"14/08/2026","controvalore":127821.89,"utilePerdita":2372.16,"upDepAmm":1.89,"upGestPatr":16.2},{"data":"24/08/2026","controvalore":126606.13,"utilePerdita":1156.4,"upDepAmm":0.92,"upGestPatr":15.1},{"data":"04/09/2026","controvalore":126141.04,"utilePerdita":655.0,"upDepAmm":0.55,"upGestPatr":14.67}],"deposito_isp":[{"data":"08/04/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"28/04/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"08/05/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"14/05/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"19/05/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"26/05/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"30/05/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"05/06/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"11/06/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"19/06/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"25/06/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"02/07/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"09/07/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"17/07/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"25/07/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"06/08/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"14/08/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"24/08/2026","upDepAmm":0.0,"upGestPatr":0.0},{"data":"04/09/2026","upDepAmm":0.0,"upGestPatr":0.0}]};
 
   const els = {
     cards: document.getElementById('cards'),
-    btnEsporta: document.getElementById('btnEsporta'),
-    btnImporta: document.getElementById('btnImporta'),
-    fileImporta: document.getElementById('fileImporta'),
-    btnReset: document.getElementById('btnReset')
+    vuoto: document.getElementById('vuoto'),
+    totaleWrap: document.getElementById('totaleWrap'),
+    totaleValore: document.getElementById('totaleValore'),
+    totaleDettaglio: document.getElementById('totaleDettaglio'),
+    totaleData: document.getElementById('totaleData'),
+    totaleImport: document.getElementById('totaleImport'),
+    posizioniWrap: document.getElementById('posizioniWrap'),
+    posizioniCard: document.getElementById('posizioniCard'),
+    posizioniData: document.getElementById('posizioniData'),
+    fileInput: document.getElementById('fileInput'),
+    dropLabel: document.getElementById('dropLabel'),
+    stato: document.getElementById('stato'),
+    sottotitolo: document.getElementById('sottotitolo'),
+    overlay: document.getElementById('overlay'),
+    btnImpostazioni: document.getElementById('btnImpostazioni'),
+    btnAnnulla: document.getElementById('btnAnnulla'),
+    btnSalva: document.getElementById('btnSalva'),
+    tokenInput: document.getElementById('tokenInput'),
+    urlInput: document.getElementById('urlInput')
   };
 
   const charts = {};
+  let DATI = { serie: { gestione_patrimoniale: [], deposito_amministrativo: [], deposito_isp: [] }, posizioni: { data: '', righe: [] } };
 
-  function caricaDati() {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (err) { /* localStorage non disponibile */ }
-    return JSON.parse(JSON.stringify(SEED));
+  /* ===================== configurazione ===================== */
+  function getConfig() {
+    return {
+      token: localStorage.getItem(LS_TOKEN) || DEFAULT_TOKEN,
+      url: localStorage.getItem(LS_URL) || DEFAULT_URL
+    };
   }
-  function salvaDati(dati) {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(dati)); }
-    catch (err) { /* storage pieno o non disponibile */ }
+  function apriImpostazioni() {
+    const c = getConfig();
+    els.tokenInput.value = c.token;
+    els.urlInput.value = c.url;
+    els.overlay.classList.add('aperto');
+    els.tokenInput.focus();
   }
+  function chiudiImpostazioni() { els.overlay.classList.remove('aperto'); }
 
-  let DATI = caricaDati();
+  els.btnImpostazioni.addEventListener('click', apriImpostazioni);
+  els.btnAnnulla.addEventListener('click', chiudiImpostazioni);
+  els.overlay.addEventListener('click', (e) => { if (e.target === els.overlay) chiudiImpostazioni(); });
+  els.btnSalva.addEventListener('click', () => {
+    localStorage.setItem(LS_TOKEN, els.tokenInput.value.trim());
+    localStorage.setItem(LS_URL, els.urlInput.value.trim());
+    chiudiImpostazioni();
+    caricaDati(false);
+  });
 
+  function mostraStato(msg, tipo) {
+    els.stato.textContent = msg;
+    els.stato.className = 'stato visibile' + (tipo ? ' ' + tipo : '');
+  }
+  function nascondiStato() { els.stato.className = 'stato'; }
+
+  /* ===================== formattazione ===================== */
   const formatEuro = (n) => (Number(n) || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
-  const formatNum = (n, dec) => (Number(n) || 0).toLocaleString('it-IT', { maximumFractionDigits: dec != null ? dec : 2, minimumFractionDigits: 0 });
+  const formatNum = (n, dec) => (Number(n) || 0).toLocaleString('it-IT', { maximumFractionDigits: dec != null ? dec : 2 });
+  // Le percentuali arrivano dal server SEMPRE come frazione (0,005 = 0,50%).
+  const formatPct = (f) => ((Number(f) || 0) * 100).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + '%';
 
-  function parseDataIT(str) {
-    const [g, m, a] = (str || '').split('/').map(Number);
-    return new Date(a || 1970, (m || 1) - 1, g || 1);
+  /** Data + ora dell'import. Distinta da formatDataBreve, che mostra la data di valorizzazione. */
+  function formatDataOra(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) +
+           ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   }
-  function formatDataBreve(str) {
-    const d = parseDataIT(str);
+
+  function formatDataBreve(iso) {
+    if (!iso) return '—';
+    const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return String(iso);
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
     return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' });
   }
 
-  function righeProdotto(prod) {
-    const arr = DATI[prod.id] || [];
-    return arr.slice().sort((a, b) => parseDataIT(a.data) - parseDataIT(b.data));
-  }
-  function ultimoConCampo(righe, field) {
-    for (let i = righe.length - 1; i >= 0; i--) {
-      if (righe[i][field] != null) return righe[i];
+  /* ===================== lettura dell'export xlsx ===================== */
+  /**
+   * Converte un numero in formato italiano ("€ 1.234,56", "-0,50 %") in Number.
+   * Stessa logica di parseImportoIT lato Apps Script: la virgola è il segnale
+   * che il punto va trattato come separatore delle migliaia. Senza virgola il
+   * valore resta com'è, perché "123.456" potrebbe legittimamente essere
+   * 123 virgola 456.
+   */
+  function parseImportoIT(val) {
+    if (val === '' || val === null || val === undefined) return null;
+    if (typeof val === 'number') return val;
+    let s = String(val).trim();
+    if (s === '' || s === '-') return null;
+    const negativo = /^-/.test(s) || /^\(.*\)$/.test(s);
+    s = s.replace(/[€$\s()%]/g, '').replace(/^-/, '');
+    if (s.indexOf(',') !== -1) {
+      s = s.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
     }
-    return null;
+    const n = parseFloat(s);
+    if (isNaN(n)) return null;
+    return negativo ? -n : n;
+  }
+  /** Percentuali: restituite come frazione, coerenti con il resto dell'app. */
+  function parsePct(val) {
+    const n = parseImportoIT(val);
+    return n === null ? null : n / 100;
   }
 
-  function renderKpi(prod, righe) {
-    const rigaValore = ultimoConCampo(righe, prod.valueField);
-    let valoreHtml, dettaglioHtml;
-    if (rigaValore) {
-      const ultimo = rigaValore[prod.valueField];
-      const classe = prod.rateField && rigaValore[prod.rateField] != null
-        ? (rigaValore[prod.rateField] > 0 ? 'positivo' : (rigaValore[prod.rateField] < 0 ? 'negativo' : ''))
-        : '';
-      valoreHtml = `<span class="v ${classe}">${formatEuro(ultimo)}</span>`;
-      const parti = [];
-      if (rigaValore.utilePerdita != null) {
-        const segno = rigaValore.utilePerdita > 0 ? '+' : '';
-        parti.push(`${segno}${formatEuro(rigaValore.utilePerdita)}`);
-      }
-      if (prod.rateField && rigaValore[prod.rateField] != null) {
-        const v = rigaValore[prod.rateField];
-        const segno = v > 0 ? '+' : '';
-        parti.push(`${segno}${formatNum(v, 2)}%`);
-      }
-      dettaglioHtml = parti.length ? `<div class="d">${parti.join(' · ')} al ${formatDataBreve(rigaValore.data)}</div>` : `<div class="d">Aggiornato al ${formatDataBreve(rigaValore.data)}</div>`;
-    } else {
-      valoreHtml = `<span class="v">—</span>`;
-      dettaglioHtml = `<div class="d">Nessun controvalore ancora inserito</div>`;
+  function normalizza(s) {
+    return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
+  /**
+   * Interpreta il foglio dell'export "patrimonio".
+   *
+   * L'ancoraggio è sulle ETICHETTE di colonna A ("Deposito Amministrato",
+   * "Totale Fondi e Sicav", …), mai sui numeri di riga: le righe dei fondi
+   * cambiano ogni volta che compri o vendi, quindi un parser posizionale si
+   * romperebbe al primo movimento.
+   */
+  function interpretaPatrimonio(righe) {
+    const risultato = { data: '', sezioni: {}, posizioni: [] };
+
+    const testoA = (r) => normalizza(righe[r] && righe[r][0]);
+    const cella = (r, c) => (righe[r] && righe[r][c] !== undefined ? righe[r][c] : '');
+
+    let rigaDepAmm = -1, rigaGestPatr = -1, rigaTotFondi = -1, rigaTotCert = -1, rigaTotGP = -1, rigaLiquidita = -1;
+    let rigaTotaleControvalore = -1;
+
+    for (let r = 0; r < righe.length; r++) {
+      const a = testoA(r);
+      const e = normalizza(cella(r, 4));
+      if (e.indexOf('totale controvalore') === 0 && rigaTotaleControvalore === -1) rigaTotaleControvalore = r;
+      if (a.indexOf('deposito amministrat') === 0 && rigaDepAmm === -1) rigaDepAmm = r;
+      if (a.indexOf('gestione patrimoniale') === 0 && rigaGestPatr === -1) rigaGestPatr = r;
+      if (a.indexOf('totale fondi') === 0) rigaTotFondi = r;
+      if (a.indexOf('totale certificates') === 0) rigaTotCert = r;
+      if (a.indexOf('totale gestioni patrimoniali') === 0) rigaTotGP = r;
+      if (a.indexOf('saldo disponibilit') === 0) rigaLiquidita = r;
     }
-    const ultimaData = righe.length ? righe[righe.length - 1].data : null;
+
+    if (rigaDepAmm === -1 && rigaGestPatr === -1) {
+      throw new Error('Non riconosco questo file: non trovo né "Deposito Amministrato" né "Gestione Patrimoniale".');
+    }
+
+    // Colonne fisse dell'export: H=7 (U/P %), I=8 (U/P €), K=10 (controvalore)
+    const C = { desc: 0, isin: 1, qta: 2, carico: 3, mercato: 4, varPct: 5, dataQuota: 6, upPct: 7, upEur: 8, cvCarico: 9, cv: 10 };
+
+    if (rigaDepAmm !== -1) {
+      risultato.sezioni.depositoAmministrativo = {
+        controvalore: parseImportoIT(cella(rigaDepAmm, C.cv)),
+        utilePerdita: parseImportoIT(cella(rigaDepAmm, C.upEur)),
+        utilePerditaPct: parsePct(cella(rigaDepAmm, C.upPct))
+      };
+    }
+    if (rigaGestPatr !== -1) {
+      risultato.sezioni.gestionePatrimoniale = {
+        controvalore: parseImportoIT(cella(rigaGestPatr, C.cv)),
+        utilePerdita: parseImportoIT(cella(rigaGestPatr, C.upEur)),
+        utilePerditaPct: parsePct(cella(rigaGestPatr, C.upPct))
+      };
+    }
+    if (rigaLiquidita !== -1) {
+      risultato.sezioni.liquidita = { controvalore: parseImportoIT(cella(rigaLiquidita, C.cv)) };
+    }
+    if (rigaTotaleControvalore !== -1) {
+      risultato.sezioni.totale = {
+        controvalore: parseImportoIT(cella(rigaTotaleControvalore, C.cv)),
+        utilePerdita: parseImportoIT(cella(rigaTotaleControvalore, C.upEur)),
+        utilePerditaPct: parsePct(cella(rigaTotaleControvalore, C.upPct))
+      };
+    }
+
+    // Righe di dettaglio: tutto ciò che sta fra un'intestazione "Descrizione"
+    // e la riga "Totale ..." che chiude quel blocco.
+    function raccogliBlocco(rigaTotale, sezione) {
+      if (rigaTotale === -1) return;
+      let inizio = -1;
+      for (let r = rigaTotale - 1; r >= 0; r--) {
+        if (testoA(r).indexOf('descrizione') === 0) { inizio = r + 1; break; }
+      }
+      if (inizio === -1) return;
+      for (let r = inizio; r < rigaTotale; r++) {
+        const desc = String(cella(r, C.desc) || '').trim();
+        if (!desc) continue;
+        const isin = String(cella(r, C.isin) || '').trim();
+        const cv = parseImportoIT(cella(r, C.cv));
+        if (cv === null) continue;
+        risultato.posizioni.push({
+          sezione: sezione,
+          descrizione: desc,
+          isin: isin === '-' ? '' : isin,
+          quantita: parseImportoIT(cella(r, C.qta)),
+          prezzoCarico: parseImportoIT(cella(r, C.carico)),
+          prezzoMercato: parseImportoIT(cella(r, C.mercato)),
+          varPct: parsePct(cella(r, C.varPct)),
+          utilePerditaPct: parsePct(cella(r, C.upPct)),
+          utilePerditaEuro: parseImportoIT(cella(r, C.upEur)),
+          controvaloreCarico: parseImportoIT(cella(r, C.cvCarico)),
+          controvalore: cv
+        });
+        if (!risultato.data) {
+          const d = String(cella(r, C.dataQuota) || '').trim();
+          const m = d.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+          if (m) risultato.data = m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+        }
+      }
+    }
+
+    raccogliBlocco(rigaTotFondi, 'FONDI');
+    raccogliBlocco(rigaTotCert, 'CERTIFICATES');
+    raccogliBlocco(rigaTotGP, 'GESTIONE_PATRIMONIALE');
+
+    // Se nessuna riga portava una data valida (es. solo "-" nella GP),
+    // si usa la data di oggi: meglio un punto datato oggi che nessun punto.
+    if (!risultato.data) {
+      const oggi = new Date();
+      risultato.data = oggi.getFullYear() + '-' + ('0' + (oggi.getMonth() + 1)).slice(-2) + '-' + ('0' + oggi.getDate()).slice(-2);
+    }
+
+    return risultato;
+  }
+
+  /* ===================== rete ===================== */
+  async function chiamaAppsScript(metodo, body) {
+    const cfg = getConfig();
+    if (!cfg.token || !cfg.url) {
+      apriImpostazioni();
+      throw new Error('Configura prima codice e URL nelle impostazioni.');
+    }
+    if (metodo === 'GET') {
+      const res = await fetch(cfg.url + '?token=' + encodeURIComponent(cfg.token) + '&sezione=intesa');
+      return res.json();
+    }
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ token: cfg.token }, body))
+    });
+    return res.json();
+  }
+
+  function salvaCache(intesa) {
+    try { localStorage.setItem(LS_CACHE, JSON.stringify({ intesa, ts: Date.now() })); }
+    catch (err) { /* storage pieno o non disponibile */ }
+  }
+  function leggiCache() {
+    try {
+      const raw = localStorage.getItem(LS_CACHE);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) { return null; }
+  }
+
+  async function caricaDati(inSottofondo) {
+    const cfg = getConfig();
+    if (!cfg.token || !cfg.url) return;
+    try {
+      if (!inSottofondo) mostraStato('Aggiorno i dati…');
+      const risp = await chiamaAppsScript('GET');
+      if (risp.error) {
+        if (!inSottofondo) mostraStato('Errore: ' + risp.error, 'errore');
+        return;
+      }
+      nascondiStato();
+      applica(risp.intesa);
+      salvaCache(risp.intesa);
+      els.sottotitolo.textContent = 'Aggiornato ora';
+    } catch (err) {
+      if (!inSottofondo) mostraStato(String(err.message || err), 'errore');
+    }
+  }
+
+  /* ===================== render ===================== */
+  function applica(intesa) {
+    if (!intesa) return;
+    DATI = intesa;
+    renderTutto();
+  }
+
+  function serieDi(id) {
+    const s = (DATI.serie && DATI.serie[id]) || [];
+    return s.filter(p => p && p.data);
+  }
+
+  function renderTotale() {
+    const ultimi = PRODUCTS.map(p => {
+      const s = serieDi(p.id);
+      return s.length ? s[s.length - 1] : null;
+    });
+    const validi = ultimi.filter(Boolean);
+    if (!validi.length) {
+      els.totaleWrap.style.display = 'none';
+      els.vuoto.style.display = 'block';
+      return;
+    }
+    els.vuoto.style.display = 'none';
+    els.totaleWrap.style.display = 'flex';
+
+    // Il totale somma Deposito Amministrativo e Gestione Patrimoniale.
+    // Il Deposito ISP è già dentro il Deposito Amministrativo (i certificates),
+    // quindi sommarlo di nuovo gonfierebbe il patrimonio.
+    let totale = 0;
+    ['deposito_amministrativo', 'gestione_patrimoniale'].forEach(id => {
+      const s = serieDi(id);
+      if (s.length) totale += Number(s[s.length - 1].controvalore) || 0;
+    });
+
+    const dataPiuRecente = validi.map(v => v.data).sort().pop();
+    els.totaleValore.textContent = formatEuro(totale);
+
+    const depAmm = serieDi('deposito_amministrativo');
+    const ultimoDep = depAmm.length ? depAmm[depAmm.length - 1] : null;
+    if (ultimoDep && ultimoDep.utilePerdita !== '' && ultimoDep.utilePerdita !== null) {
+      const up = Number(ultimoDep.utilePerdita) || 0;
+      const segno = up > 0 ? '+' : '';
+      els.totaleDettaglio.innerHTML = 'Dep. amm.: <span class="' + (up >= 0 ? 'positivo' : 'negativo') + '">' +
+        segno + formatEuro(up) + '</span>';
+    } else {
+      els.totaleDettaglio.textContent = '';
+    }
+    els.totaleData.textContent = formatDataBreve(dataPiuRecente);
+
+    // Data di valorizzazione e data di import sono due cose diverse: mostrare
+    // solo la prima nasconderebbe un dato scaricato giorni prima di caricarlo.
+    const ultimoImport = validi
+      .map(v => v.dataImport)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    els.totaleImport.textContent = ultimoImport ? 'importato il ' + formatDataOra(ultimoImport) : '';
+  }
+
+  function renderKpi(prod, serie) {
+    if (!serie.length) {
+      return '<div class="kpi-row"><div class="kpi"><div class="k">Controvalore</div><div class="v">—</div>' +
+             '<div class="d">Nessun dato ancora</div></div></div>';
+    }
+    const ultimo = serie[serie.length - 1];
+    const precedente = serie.length > 1 ? serie[serie.length - 2] : null;
+
+    let classe = '', dettaglio = '';
+    if (ultimo.pct !== '' && ultimo.pct !== null && ultimo.pct !== undefined) {
+      const p = Number(ultimo.pct) || 0;
+      classe = p > 0 ? 'positivo' : (p < 0 ? 'negativo' : '');
+      dettaglio = (p > 0 ? '+' : '') + formatPct(p);
+    }
+    if (ultimo.utilePerdita !== '' && ultimo.utilePerdita !== null && ultimo.utilePerdita !== undefined) {
+      const up = Number(ultimo.utilePerdita) || 0;
+      dettaglio = (up > 0 ? '+' : '') + formatEuro(up) + (dettaglio ? ' · ' + dettaglio : '');
+      if (!classe) classe = up > 0 ? 'positivo' : (up < 0 ? 'negativo' : '');
+    }
+
+    let variazione = '';
+    if (precedente) {
+      const delta = (Number(ultimo.controvalore) || 0) - (Number(precedente.controvalore) || 0);
+      const segno = delta > 0 ? '+' : '';
+      variazione = '<div class="d">' + segno + formatEuro(delta) + ' dal ' + formatDataBreve(precedente.data) + '</div>';
+    }
+
     return `
       <div class="kpi-row">
         <div class="kpi">
-          <div class="k">${prod.valueLabel} attuale</div>
-          ${valoreHtml}
-          ${dettaglioHtml}
+          <div class="k">Controvalore</div>
+          <div class="v ${classe}">${formatEuro(ultimo.controvalore)}</div>
+          <div class="d">${dettaglio || 'al ' + formatDataBreve(ultimo.data)}</div>
         </div>
         <div class="kpi" style="text-align:right;">
           <div class="k">Rilevazioni</div>
-          <div class="v" style="font-size:16px;">${righe.length}</div>
-          <div class="d">${ultimaData ? 'ultima ' + formatDataBreve(ultimaData) : '—'}</div>
+          <div class="v" style="font-size:16px;">${serie.length}</div>
+          ${variazione || '<div class="d">ultima ' + formatDataBreve(ultimo.data) + '</div>'}
         </div>
       </div>`;
   }
 
-  function renderTabella(prod, righe) {
-    if (!righe.length) return '<p class="form-hint">Nessuna rilevazione ancora inserita.</p>';
-    const cols = [prod.valueField];
-    if (prod.id === 'deposito_amministrativo') cols.push('utilePerdita');
-    if (prod.rateField) cols.push(prod.rateField);
-    const intestazioni = { controvalore: 'Controvalore', utilePerdita: 'Ut/Perd €', upDepAmm: 'U/P %', upGestPatr: 'U/P %' };
-    const righeInvertite = righe.slice().reverse();
-    const testata = '<tr><th>Data</th>' + cols.map(c => `<th>${intestazioni[c] || c}</th>`).join('') + '<th></th></tr>';
-    const corpo = righeInvertite.map((r, idxRev) => {
-      const idxOrig = righe.length - 1 - idxRev;
-      const celle = cols.map(c => {
-        const val = r[c];
-        if (val == null) return '<td>—</td>';
-        if (c === 'upDepAmm' || c === 'upGestPatr') return `<td>${formatNum(val, 2)}%</td>`;
-        return `<td>${formatEuro(val)}</td>`;
-      }).join('');
-      return `<tr><td>${formatDataBreve(r.data)}</td>${celle}<td><button class="del-btn" data-prod="${prod.id}" data-idx="${idxOrig}" title="Elimina rilevazione">✕</button></td></tr>`;
+  function renderTabella(prod, serie) {
+    if (!serie.length) return '<p class="chart-empty">Nessuna rilevazione.</p>';
+    const righe = serie.slice().reverse().map(p => {
+      const up = (p.utilePerdita === '' || p.utilePerdita === null || p.utilePerdita === undefined)
+        ? '—' : formatEuro(p.utilePerdita);
+      const pct = (p.pct === '' || p.pct === null || p.pct === undefined) ? '—' : formatPct(p.pct);
+      const imp = p.dataImport ? formatDataOra(p.dataImport) : '—';
+      return `<tr>
+        <td>${formatDataBreve(p.data)}</td>
+        <td>${formatEuro(p.controvalore)}</td>
+        <td>${up}</td>
+        <td>${pct}</td>
+        <td class="col-import">${imp}</td>
+        <td><button class="del-btn" data-id="${p.id || ''}" title="Elimina rilevazione">✕</button></td>
+      </tr>`;
     }).join('');
-    return `<table class="tbl">${testata}${corpo}</table>`;
+    return `<table class="tbl"><tr><th>Data</th><th>Controvalore</th><th>U/P €</th><th>U/P %</th><th class="col-import">Importato</th><th></th></tr>${righe}</table>`;
   }
 
-  function renderForm(prod) {
-    const campi = prod.fields.map(f => `
-      <div>
-        <label for="in-${prod.id}-${f.key}">${f.label}</label>
-        <input type="number" step="${f.step}" id="in-${prod.id}-${f.key}" data-key="${f.key}">
-      </div>`).join('');
-    return `
-      <form class="add-form" data-prod="${prod.id}">
-        <div class="field-grid">
-          <div>
-            <label for="in-${prod.id}-data">Data rilevazione</label>
-            <input type="date" id="in-${prod.id}-data" required>
-          </div>
-          ${campi}
-        </div>
-        <div class="form-actions">
-          <span class="form-hint">Lascia vuoto un campo se non disponibile</span>
-          <button type="submit" class="btn primario">Aggiungi</button>
-        </div>
-        <div class="stato-inline" data-stato></div>
-      </form>`;
-  }
-
-  function renderGrafico(prod, righe, canvasId) {
+  function renderGrafico(prod, serie, canvasId) {
     const wrap = document.getElementById('wrap-' + canvasId);
-    const haValore = righe.some(r => r[prod.valueField] != null);
-    if (!haValore) {
-      wrap.innerHTML = '<div class="chart-empty">Aggiungi almeno una rilevazione di ' + prod.valueLabel.toLowerCase() + ' per vedere il grafico.</div>';
+    if (!wrap) return;
+    if (!serie.length) {
+      wrap.innerHTML = '<div class="chart-empty">Nessun dato da rappresentare.</div>';
       return;
     }
     if (typeof Chart === 'undefined') {
-      wrap.innerHTML = '<div class="chart-empty">Grafico non disponibile (libreria non caricata). Verifica la connessione e ricarica la pagina.</div>';
+      wrap.innerHTML = '<div class="chart-empty">Grafico non disponibile (libreria non caricata).</div>';
       return;
     }
     wrap.innerHTML = `<canvas id="${canvasId}"></canvas>`;
     const ctx = document.getElementById(canvasId).getContext('2d');
 
-    const labels = righe.map(r => formatDataBreve(r.data));
-    const datiValore = righe.map(r => (r[prod.valueField] != null ? r[prod.valueField] : null));
+    const labels = serie.map(p => formatDataBreve(p.data));
     const datasets = [{
-      label: prod.valueLabel,
-      data: datiValore,
+      label: 'Controvalore',
+      data: serie.map(p => Number(p.controvalore) || null),
       borderColor: '#C9A24B',
       backgroundColor: 'rgba(201,162,75,0.12)',
-      tension: 0.25,
-      pointRadius: 1.5,
-      spanGaps: true,
-      fill: true,
-      yAxisID: 'y'
+      tension: 0.25, pointRadius: 1.5, spanGaps: true, fill: true, yAxisID: 'y'
     }];
 
     const scales = {
@@ -353,27 +696,20 @@
       y: { ticks: { color: '#8B93A7', font: { size: 10 } }, grid: { color: '#1c2740' } }
     };
 
-    if (prod.rateField) {
-      const datiTasso = righe.map(r => (r[prod.rateField] != null ? r[prod.rateField] : null));
-      const haTasso = datiTasso.some(v => v != null);
-      if (haTasso) {
-        datasets.push({
-          label: prod.rateLabel + ' %',
-          data: datiTasso,
-          borderColor: '#2FA36B',
-          backgroundColor: 'transparent',
-          borderDash: [4, 3],
-          tension: 0.2,
-          pointRadius: 1,
-          spanGaps: true,
-          yAxisID: 'y1'
-        });
-        scales.y1 = {
-          position: 'right',
-          ticks: { color: '#2FA36B', font: { size: 10 }, callback: (v) => v + '%' },
-          grid: { drawOnChartArea: false }
-        };
-      }
+    const datiPct = serie.map(p => (p.pct === '' || p.pct === null || p.pct === undefined) ? null : (Number(p.pct) || 0) * 100);
+    if (datiPct.some(v => v !== null)) {
+      datasets.push({
+        label: 'U/P %',
+        data: datiPct,
+        borderColor: '#2FA36B',
+        backgroundColor: 'transparent',
+        borderDash: [4, 3], tension: 0.2, pointRadius: 1, spanGaps: true, yAxisID: 'y1'
+      });
+      scales.y1 = {
+        position: 'right',
+        ticks: { color: '#2FA36B', font: { size: 10 }, callback: (v) => formatNum(v, 1) + '%' },
+        grid: { drawOnChartArea: false }
+      };
     }
 
     if (charts[canvasId]) charts[canvasId].destroy();
@@ -381,17 +717,15 @@
       type: 'line',
       data: { labels, datasets },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: datasets.length > 1, labels: { color: '#ECE7DA', font: { size: 10.5 }, boxWidth: 12 } },
           tooltip: {
             callbacks: {
-              label: (ctx) => {
-                if (ctx.dataset.yAxisID === 'y1') return ctx.dataset.label + ': ' + formatNum(ctx.raw, 2) + '%';
-                return ctx.dataset.label + ': ' + formatEuro(ctx.raw);
-              }
+              label: (c) => c.dataset.yAxisID === 'y1'
+                ? c.dataset.label + ': ' + formatNum(c.raw, 2) + '%'
+                : c.dataset.label + ': ' + formatEuro(c.raw)
             }
           }
         },
@@ -400,123 +734,159 @@
     });
   }
 
-  function renderCard(prod) {
-    const righe = righeProdotto(prod);
-    const canvasId = 'chart-' + prod.id;
-    return `
-      <div class="card" data-prod-card="${prod.id}">
-        <div class="card-head">
-          <span class="nome">${prod.nome}</span>
-          <span class="tag ${prod.tag}">Intesa</span>
-        </div>
-        <div class="meta">ID ${prod.id}</div>
-        ${renderKpi(prod, righe)}
-        <div class="chart-wrap" id="wrap-${canvasId}"></div>
-        <details class="storico">
-          <summary>Storico rilevazioni (${righe.length})</summary>
-          ${renderTabella(prod, righe)}
-        </details>
-        ${renderForm(prod)}
+  function renderPosizioni() {
+    const pos = (DATI.posizioni && DATI.posizioni.righe) || [];
+    if (!pos.length) { els.posizioniWrap.style.display = 'none'; return; }
+    els.posizioniWrap.style.display = 'block';
+    const imp = DATI.posizioni.dataImport ? ' · importato ' + formatDataOra(DATI.posizioni.dataImport) : '';
+    els.posizioniData.textContent = formatDataBreve(DATI.posizioni.data) + imp;
+
+    const ETICHETTE = { FONDI: 'Fondi e Sicav', CERTIFICATES: 'Certificates', GESTIONE_PATRIMONIALE: 'Gestione Patrimoniale' };
+    const gruppi = {};
+    pos.forEach(p => {
+      const g = p.sezione || 'ALTRO';
+      if (!gruppi[g]) gruppi[g] = [];
+      gruppi[g].push(p);
+    });
+
+    let html = '';
+    Object.keys(gruppi).forEach(g => {
+      const righe = gruppi[g].map(p => {
+        const upPct = (p.utilePerditaPct === '' || p.utilePerditaPct === null) ? '—' : formatPct(p.utilePerditaPct);
+        const classe = (Number(p.utilePerditaPct) || 0) > 0 ? 'positivo' : ((Number(p.utilePerditaPct) || 0) < 0 ? 'negativo' : '');
+        return `<tr>
+          <td class="nome-pos" title="${p.descrizione}">${p.descrizione}</td>
+          <td>${formatEuro(p.controvalore)}</td>
+          <td class="${classe}">${upPct}</td>
+        </tr>`;
+      }).join('');
+      html += `<div style="margin-bottom:14px;">
+        <div class="k" style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">${ETICHETTE[g] || g}</div>
+        <table class="tbl"><tr><th>Strumento</th><th>Controvalore</th><th>U/P %</th></tr>${righe}</table>
       </div>`;
+    });
+    els.posizioniCard.innerHTML = html;
   }
 
   function renderTutto() {
-    els.cards.innerHTML = PRODUCTS.map(renderCard).join('');
+    renderTotale();
+
+    els.cards.innerHTML = PRODUCTS.map(prod => {
+      const serie = serieDi(prod.id);
+      const canvasId = 'chart-' + prod.id;
+      return `
+        <div class="card">
+          <div class="card-head">
+            <span class="nome">${prod.nome}</span>
+            <span class="tag ${prod.tag}">Intesa</span>
+          </div>
+          ${renderKpi(prod, serie)}
+          <div class="chart-wrap" id="wrap-${canvasId}"></div>
+          <details class="storico">
+            <summary>Storico rilevazioni (${serie.length})</summary>
+            ${renderTabella(prod, serie)}
+          </details>
+        </div>`;
+    }).join('');
+
     PRODUCTS.forEach(prod => {
       try {
-        const righe = righeProdotto(prod);
-        renderGrafico(prod, righe, 'chart-' + prod.id);
+        renderGrafico(prod, serieDi(prod.id), 'chart-' + prod.id);
       } catch (err) {
         const wrap = document.getElementById('wrap-chart-' + prod.id);
         if (wrap) wrap.innerHTML = '<div class="chart-empty">Grafico non disponibile al momento.</div>';
       }
     });
-    agganciaEventi();
-  }
 
-  function agganciaEventi() {
-    els.cards.querySelectorAll('form.add-form').forEach(form => {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const prodId = form.getAttribute('data-prod');
-        const dataInput = form.querySelector('input[type="date"]');
-        const statoEl = form.querySelector('[data-stato]');
-        if (!dataInput.value) return;
-        const [aa, mm, gg] = dataInput.value.split('-');
-        const entry = { data: `${gg}/${mm}/${aa}` };
-        let almenoUnValore = false;
-        form.querySelectorAll('input[data-key]').forEach(inp => {
-          if (inp.value !== '') {
-            entry[inp.getAttribute('data-key')] = parseFloat(inp.value.replace(',', '.'));
-            almenoUnValore = true;
-          }
-        });
-        if (!almenoUnValore) {
-          statoEl.textContent = 'Inserisci almeno un valore oltre alla data.';
-          statoEl.className = 'stato-inline visibile errore';
-          return;
-        }
-        if (!DATI[prodId]) DATI[prodId] = [];
-        DATI[prodId].push(entry);
-        salvaDati(DATI);
-        renderTutto();
-      });
-    });
+    renderPosizioni();
 
     els.cards.querySelectorAll('.del-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const prodId = btn.getAttribute('data-prod');
-        const righeOrdinate = righeProdotto(PRODUCTS.find(p => p.id === prodId));
-        const idx = Number(btn.getAttribute('data-idx'));
-        const voce = righeOrdinate[idx];
-        if (!voce) return;
-        if (!confirm(`Eliminare la rilevazione del ${voce.data}?`)) return;
-        const arr = DATI[prodId] || [];
-        const pos = arr.indexOf(voce);
-        if (pos >= 0) arr.splice(pos, 1);
-        salvaDati(DATI);
-        renderTutto();
-      });
+      btn.addEventListener('click', () => eliminaRilevazione(btn.dataset.id));
     });
   }
 
-  els.btnEsporta.addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(DATI, null, 1)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'intesa-dati-' + new Date().toISOString().slice(0, 10) + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+  async function eliminaRilevazione(id) {
+    if (!id) { mostraStato('Questa riga non ha un ID: eliminala dal foglio.', 'errore'); return; }
+    if (!confirm('Eliminare questa rilevazione dal foglio?')) return;
+    mostraStato('Elimino…');
+    try {
+      const risp = await chiamaAppsScript('POST', { eliminaIntesaId: id });
+      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+      nascondiStato();
+      applica(risp.intesa);
+      salvaCache(risp.intesa);
+    } catch (err) {
+      mostraStato(String(err.message || err), 'errore');
+    }
+  }
 
-  els.btnImporta.addEventListener('click', () => els.fileImporta.click());
-  els.fileImporta.addEventListener('change', async (e) => {
+  /* ===================== upload ===================== */
+  els.fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    els.dropLabel.textContent = file.name;
+    mostraStato('Leggo ' + file.name + '…');
+
     try {
-      const testo = await file.text();
-      const parsed = JSON.parse(testo);
-      if (!confirm('Importare questo file sostituirà i dati attuali. Continuare?')) { e.target.value = ''; return; }
-      DATI = parsed;
-      salvaDati(DATI);
-      renderTutto();
+      if (typeof XLSX === 'undefined') {
+        throw new Error('Libreria di lettura Excel non caricata. Controlla la connessione e ricarica.');
+      }
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // raw:false + defval:'' -> ogni cella arriva come stringa già formattata,
+      // esattamente com'è nell'export, così il parsing è prevedibile.
+      const righe = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+
+      const payload = interpretaPatrimonio(righe);
+      mostraStato('Invio i dati…');
+
+      const risp = await chiamaAppsScript('POST', { intesa: payload });
+      if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
+
+      const nuove = risp.righe || 0;
+      const agg = risp.aggiornate || 0;
+      const posiz = risp.posizioni || 0;
+      mostraStato(
+        (nuove === 0 && agg === 0 && posiz === 0)
+          ? 'Nessuna novità: questo export era già stato importato.'
+          : `Importato: ${nuove} righe nuove, ${agg} aggiornate, ${posiz} posizioni.`,
+        'ok'
+      );
+
+      applica(risp.intesa);
+      salvaCache(risp.intesa);
+      els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
-      alert('File non valido: ' + err.message);
+      mostraStato(String(err.message || err), 'errore');
     } finally {
-      e.target.value = '';
+      els.fileInput.value = '';
+      els.dropLabel.textContent = "Tocca per caricare l'export patrimonio";
     }
   });
 
-  els.btnReset.addEventListener('click', () => {
-    if (!confirm('Ripristinare i dati iniziali? Le rilevazioni aggiunte manualmente andranno perse.')) return;
-    DATI = JSON.parse(JSON.stringify(SEED));
-    salvaDati(DATI);
-    renderTutto();
-  });
-
-  renderTutto();
+  /* ===================== avvio ===================== */
+  const cfg = getConfig();
+  if (!cfg.token || !cfg.url) {
+    apriImpostazioni();
+  } else {
+    const cache = leggiCache();
+    if (cache && cache.intesa) {
+      applica(cache.intesa);
+      const minutiFa = Math.round((Date.now() - cache.ts) / 60000);
+      els.sottotitolo.textContent = minutiFa < 1 ? 'Aggiornato ora' : `Aggiornato ${minutiFa} min fa`;
+      caricaDati(true);
+    } else {
+      caricaDati(false);
+    }
+  }
 })();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* non bloccante */ });
+  });
+}
 </script>
 
 </body>
