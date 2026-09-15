@@ -118,6 +118,35 @@
   @media (max-width: 430px) {
     table.tbl .col-import { display: none; }
   }
+
+  /* ---- righe posizione espandibili ---- */
+  ul.pos-list { list-style: none; margin: 0; padding: 0; }
+  li.pos-row { padding: 11px 0; border-bottom: 1px dashed var(--line); cursor: pointer; }
+  li.pos-row:last-child { border-bottom: none; }
+  li.pos-row:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+  li.pos-row:hover .pos-nome .testo { color: var(--gold); }
+  .pos-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .pos-nome { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .pos-chevron { color: var(--muted); flex: none; display: flex; transition: transform 0.25s ease; }
+  li.pos-row.aperta .pos-chevron { transform: rotate(90deg); color: var(--gold); }
+  @media (prefers-reduced-motion: reduce) { .pos-chevron { transition: none; } }
+  .pos-nome .testo { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pos-numeri { display: flex; gap: 12px; align-items: baseline; font-family: 'IBM Plex Mono', monospace; flex: none; }
+  .pos-numeri .cv { font-size: 13px; }
+  .pos-numeri .pct { font-size: 12px; min-width: 46px; text-align: right; }
+  .pos-dettagli { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+  li.pos-row.aperta .pos-dettagli { grid-template-rows: 1fr; }
+  @media (prefers-reduced-motion: reduce) { .pos-dettagli { transition: none; } }
+  .pos-dettagli-inner { overflow: hidden; }
+  .pos-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+  }
+  .pos-grid .pg { display: flex; justify-content: space-between; gap: 8px; }
+  .pos-grid .pg-k { color: var(--muted); }
+  .pos-grid .pg-v { color: var(--text); text-align: right; }
+  .pos-grid .pg-v.isin { font-size: 10.5px; word-break: break-all; text-align: right; }
   .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
   .del-btn:hover { color: var(--err); }
 
@@ -734,6 +763,17 @@
     });
   }
 
+  function formatQty(v) {
+    if (v === '' || v === null || v === undefined) return '—';
+    return Number(v).toLocaleString('it-IT', { maximumFractionDigits: 6 });
+  }
+  function formatEuroOVuoto(v) {
+    return (v === '' || v === null || v === undefined) ? '—' : formatEuro(v);
+  }
+  function formatPctOVuoto(v) {
+    return (v === '' || v === null || v === undefined) ? '—' : formatPct(v);
+  }
+
   function renderPosizioni() {
     const pos = (DATI.posizioni && DATI.posizioni.righe) || [];
     if (!pos.length) { els.posizioniWrap.style.display = 'none'; return; }
@@ -751,21 +791,53 @@
 
     let html = '';
     Object.keys(gruppi).forEach(g => {
-      const righe = gruppi[g].map(p => {
+      const righe = gruppi[g].map((p, idx) => {
         const upPct = (p.utilePerditaPct === '' || p.utilePerditaPct === null) ? '—' : formatPct(p.utilePerditaPct);
         const classe = (Number(p.utilePerditaPct) || 0) > 0 ? 'positivo' : ((Number(p.utilePerditaPct) || 0) < 0 ? 'negativo' : '');
-        return `<tr>
-          <td class="nome-pos" title="${p.descrizione}">${p.descrizione}</td>
-          <td>${formatEuro(p.controvalore)}</td>
-          <td class="${classe}">${upPct}</td>
-        </tr>`;
+        const idRiga = g + '-' + idx;
+        return `
+          <li class="pos-row" data-riga="${idRiga}" tabindex="0" role="button" aria-expanded="false">
+            <div class="pos-top">
+              <div class="pos-nome">
+                <span class="pos-chevron">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
+                </span>
+                <span class="testo" title="${p.descrizione}">${p.descrizione}</span>
+              </div>
+              <div class="pos-numeri">
+                <span class="cv">${formatEuro(p.controvalore)}</span>
+                <span class="pct ${classe}">${upPct}</span>
+              </div>
+            </div>
+            <div class="pos-dettagli"><div class="pos-dettagli-inner"><div class="pos-grid">
+              <div class="pg"><span class="pg-k">ISIN</span><span class="pg-v isin">${p.isin || '—'}</span></div>
+              <div class="pg"><span class="pg-k">Quantità</span><span class="pg-v">${formatQty(p.quantita)}</span></div>
+              <div class="pg"><span class="pg-k">Prezzo di carico</span><span class="pg-v">${formatEuroOVuoto(p.prezzoCarico)}</span></div>
+              <div class="pg"><span class="pg-k">Prezzo di mercato</span><span class="pg-v">${formatEuroOVuoto(p.prezzoMercato)}</span></div>
+              <div class="pg"><span class="pg-k">Var. %</span><span class="pg-v">${formatPctOVuoto(p.varPct)}</span></div>
+              <div class="pg"><span class="pg-k">Controvalore di carico</span><span class="pg-v">${formatEuroOVuoto(p.controvaloreCarico)}</span></div>
+              <div class="pg"><span class="pg-k">Utile/Perdita</span><span class="pg-v">${formatEuroOVuoto(p.utilePerditaEuro)}</span></div>
+              <div class="pg"><span class="pg-k">Utile/Perdita %</span><span class="pg-v">${formatPctOVuoto(p.utilePerditaPct)}</span></div>
+            </div></div></div>
+          </li>`;
       }).join('');
       html += `<div style="margin-bottom:14px;">
         <div class="k" style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">${ETICHETTE[g] || g}</div>
-        <table class="tbl"><tr><th>Strumento</th><th>Controvalore</th><th>U/P %</th></tr>${righe}</table>
+        <ul class="pos-list">${righe}</ul>
       </div>`;
     });
     els.posizioniCard.innerHTML = html;
+
+    els.posizioniCard.querySelectorAll('li.pos-row').forEach(li => {
+      const attiva = () => {
+        const aperta = li.classList.toggle('aperta');
+        li.setAttribute('aria-expanded', aperta ? 'true' : 'false');
+      };
+      li.addEventListener('click', attiva);
+      li.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); attiva(); }
+      });
+    });
   }
 
   function renderTutto() {
