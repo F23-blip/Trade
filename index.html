@@ -300,6 +300,7 @@
   }
   .tag.azioni { background: rgba(201,162,75,0.16); color: var(--gold); }
   .tag.etf { background: rgba(47,163,107,0.16); color: var(--gain); }
+  .tag.chiusa { background: rgba(139,147,167,0.16); color: var(--muted); }
 
   .riga-numeri {
     display: flex;
@@ -312,6 +313,8 @@
     font-size: 14px;
     font-weight: 500;
   }
+  .riga-numeri .investito.positivo { color: var(--gain); }
+  .riga-numeri .investito.negativo { color: var(--err); }
   .riga-numeri .pct {
     font-size: 12.5px;
     color: var(--muted);
@@ -456,6 +459,8 @@
     white-space: nowrap;
   }
   .mov-op .mo-importo { flex: none; font-weight: 500; }
+  .mov-op .mo-importo.positivo { color: var(--gain); }
+  .mov-op .mo-importo.negativo { color: var(--err); }
 
   /* ---- andamento / grafico ---- */
   .ribbon-label { display: flex; justify-content: space-between; align-items: center; }
@@ -772,6 +777,9 @@
     urlInput: document.getElementById('urlInput'),
   };
 
+  // Ultimo riepilogo ricevuto: serve alla card "P&L realizzato" dei movimenti.
+  let ultimoRiepilogo = null;
+
   function getConfig() {
     return {
       token: localStorage.getItem(LS_TOKEN) || DEFAULT_TOKEN,
@@ -827,13 +835,35 @@
     INTEREST_PAYMENT: 'Interessi',
     TAX_OPTIMIZATION: 'Bolli / Imposte',
     CARD_TRANSACTION: 'Spese con carta',
-    CARD_ORDERING_FEE: 'Costo carta'
+    REALIZZATO: 'P&L realizzato'
   };
 
+  // Card calcolata dalle posizioni chiuse: risultato = -(investito netto).
+  function costruisciCardRealizzato() {
+    const chiuse = ((ultimoRiepilogo && ultimoRiepilogo.righe) || []).filter(r => r.chiusa);
+    if (!chiuse.length) return null;
+    return {
+      tipo: 'REALIZZATO',
+      unita: 'pos. chiuse',
+      conteggio: chiuse.length,
+      totale: chiuse.reduce((s, r) => s - (Number(r.investito) || 0), 0),
+      operazioni: chiuse
+        .map(r => ({
+          data: ((r.operazioni || [])[0] || {}).data || '',
+          importo: -(Number(r.investito) || 0),
+          descrizione: r.strumento
+        }))
+        .sort((a, b) => new Date(b.data) - new Date(a.data))
+    };
+  }
+
   function renderMovimenti(movimenti) {
-    const lista = Array.isArray(movimenti) ? movimenti : [];
-    const conTotali = lista.filter(m => m.conteggio > 0);
-    if (conTotali.length === 0) {
+    const realizzato = costruisciCardRealizzato();
+    const lista = (Array.isArray(movimenti) ? movimenti : [])
+      .filter(m => m.tipo !== 'CARD_ORDERING_FEE')
+      .concat(realizzato ? [realizzato] : []);
+
+    if (lista.filter(m => m.conteggio > 0).length === 0) {
       els.movimentiWrap.style.display = 'none';
       return;
     }
@@ -856,7 +886,7 @@
           <div>
             <div class="m-label">${ETICHETTE_MOVIMENTI[m.tipo] || m.tipo}</div>
             <div class="m-valore ${classeSegno}">${segno}${formatEuro(totale)}</div>
-            <div class="m-conteggio">${m.conteggio} mov.</div>
+            <div class="m-conteggio">${m.conteggio} ${m.unita || 'mov.'}</div>
           </div>
           <span class="m-chevron">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
@@ -880,13 +910,13 @@
   function renderOperazioniMovimento(operazioni) {
     if (!operazioni.length) return '<div class="mov-op"><span class="mo-desc">Nessun movimento trovato.</span></div>';
     return operazioni.map(op => {
-      const dataFmt = formatData(op.data);
-      const importo = formatEuro(op.importo);
+      const imp = Number(op.importo) || 0;
+      const cls = imp > 0 ? 'positivo' : (imp < 0 ? 'negativo' : '');
       return `
         <div class="mov-op">
-          <span class="mo-data">${dataFmt}</span>
+          <span class="mo-data">${formatData(op.data)}</span>
           <span class="mo-desc">${op.descrizione || ''}</span>
-          <span class="mo-importo">${importo}</span>
+          <span class="mo-importo ${cls}">${imp > 0 ? '+' : ''}${formatEuro(imp)}</span>
         </div>`;
     }).join('');
   }
@@ -1004,6 +1034,7 @@
   }
 
   function render(riepilogo) {
+    ultimoRiepilogo = riepilogo;
     const righe = (riepilogo && riepilogo.righe) || [];
     const totale = (riepilogo && riepilogo.totaleInvestito) || 0;
 
@@ -1021,15 +1052,48 @@
     els.totaleValore.textContent = formatEuro(totale);
     els.ribbonUpdated.textContent = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-    // indice per famiglia, per distribuire le tonalità
+    // indice per famiglia (solo posizioni aperte), per distribuire le tonalità
     const contaGruppo = {};
-    righe.forEach(r => { const t = (r.tipo || '').toUpperCase(); contaGruppo[t] = (contaGruppo[t] || 0) + 1; });
+    righe.filter(r => !r.chiusa).forEach(r => { const t = (r.tipo || '').toUpperCase(); contaGruppo[t] = (contaGruppo[t] || 0) + 1; });
     const idxGruppo = {};
 
     els.ribbon.innerHTML = '';
     els.righe.innerHTML = '';
 
     righe.forEach((r) => {
+      // ---- posizione chiusa: mostra il risultato realizzato, niente barra/percentuale ----
+      if (r.chiusa) {
+        const risultato = -(Number(r.investito) || 0);
+        const cls = risultato > 0 ? 'positivo' : (risultato < 0 ? 'negativo' : '');
+        const liC = document.createElement('li');
+        liC.className = 'cliccabile';
+        liC.tabIndex = 0;
+        liC.setAttribute('role', 'button');
+        liC.setAttribute('aria-expanded', 'false');
+        liC.innerHTML = `
+          <div class="riga-top">
+            <div class="riga-nome">
+              <span class="riga-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
+              </span>
+              <span class="tag chiusa">CHIUSA</span>
+              <span class="nome">${r.strumento || '—'}</span>
+            </div>
+            <div class="riga-numeri">
+              <span class="investito ${cls}">${risultato > 0 ? '+' : ''}${formatEuro(risultato)}</span>
+            </div>
+          </div>
+          <div class="riga-meta">${r.nOp || 0} op · risultato realizzato</div>
+          <div class="dettagli"><div class="dettagli-inner"><ul>${renderOperazioni(Array.isArray(r.operazioni) ? r.operazioni : [])}</ul></div></div>
+        `;
+        liC.addEventListener('click', () => toggleRiga(liC));
+        liC.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRiga(liC); }
+        });
+        els.righe.appendChild(liC);
+        return;
+      }
+
       const t = (r.tipo || '').toUpperCase();
       idxGruppo[t] = (idxGruppo[t] || 0);
       const colore = coloreRiga(t, idxGruppo[t], contaGruppo[t]);
