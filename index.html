@@ -637,6 +637,19 @@
     color: #1a1408;
   }
   .btn:hover { border-color: var(--gold); }
+    .btn:hover { border-color: var(--gold); }
+
+  /* ---- schermi larghi (PC / tablet): pagina più ampia ---- */
+  @media (min-width: 900px) {
+    main { max-width: 960px; }
+    body { padding-top: 40px; }
+    h1 { font-size: 34px; }
+    .totale .v { font-size: 32px; }
+    .movimenti-grid { grid-template-columns: repeat(3, 1fr); }
+    #chartWrap svg { max-height: 360px; }
+  }
+</style>
+</head>
 </style>
 </head>
 <body>
