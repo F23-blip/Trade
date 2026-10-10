@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portafoglio · TradeRepublic</title>
-  <style>html{visibility:hidden}</style>
+<style>html{visibility:hidden}</style>
 <script src="lock.js"></script>
 
 <!-- PWA: manifest, icone, comportamento "app" su iOS/Android -->
@@ -637,7 +637,26 @@
     color: #1a1408;
   }
   .btn:hover { border-color: var(--gold); }
-    .btn:hover { border-color: var(--gold); }
+
+  /* ---- tooltip grafico ---- */
+  #chartWrap { position: relative; }
+  #chartWrap svg { touch-action: pan-y; cursor: crosshair; }
+  .chart-guida { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+  .chart-hover { stroke: var(--bg); stroke-width: 2; opacity: 0; }
+  .chart-tooltip {
+    position: absolute; top: 4px; z-index: 2; pointer-events: none;
+    background: #05080f; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 10px; white-space: nowrap;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; line-height: 1.6;
+    opacity: 0; transition: opacity .12s;
+  }
+  .chart-tooltip.visibile { opacity: 1; }
+  .chart-tooltip .t-data { color: var(--text); font-weight: 600; margin-bottom: 2px; }
+  .chart-tooltip .t-riga { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .chart-tooltip .t-riga b { margin-left: auto; padding-left: 12px; color: var(--text); font-weight: 500; }
+  .chart-tooltip .t-riga b.positivo { color: var(--gain); }
+  .chart-tooltip .t-riga b.negativo { color: var(--err); }
+  .chart-tooltip .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
   /* ---- schermi larghi (PC / tablet): pagina più ampia ---- */
   @media (min-width: 900px) {
@@ -646,10 +665,7 @@
     h1 { font-size: 34px; }
     .totale .v { font-size: 32px; }
     .movimenti-grid { grid-template-columns: repeat(3, 1fr); }
-    #chartWrap svg { max-height: 360px; }
   }
-</style>
-</head>
 </style>
 </head>
 <body>
@@ -668,10 +684,12 @@
       </svg>
     </button>
   </div>
+
   <nav style="display:flex;gap:10px;margin-top:18px;">
     <a href="intesa.html" style="flex:1;text-align:center;text-decoration:none;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;">Intesa →</a>
     <a href="unipol.html" style="flex:1;text-align:center;text-decoration:none;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;">Unipol →</a>
   </nav>
+
   <div class="ribbon-wrap" id="ribbonWrap" style="display:none;">
     <div class="ribbon-label"><span>ALLOCAZIONE</span><span id="ribbonUpdated"></span></div>
     <div class="ribbon" id="ribbon"></div>
@@ -797,6 +815,8 @@
 
   // Ultimo riepilogo ricevuto: serve alla card "P&L realizzato" dei movimenti.
   let ultimoRiepilogo = null;
+  // Ultimi punti dell'andamento: servono a ridisegnare il grafico se la finestra cambia larghezza.
+  let ultimoAndamento = null;
 
   function getConfig() {
     return {
@@ -941,6 +961,7 @@
 
   function renderAndamento(andamento) {
     const punti = Array.isArray(andamento) ? andamento : [];
+    ultimoAndamento = punti;
 
     if (punti.length === 0) {
       els.guadagnoWrap.style.display = 'none';
@@ -1011,8 +1032,15 @@
     els.btnElencoValori.textContent = aperto ? 'Vedi tutti i valori' : 'Nascondi elenco';
   });
 
+  // ---------- grafico interattivo ----------
+  let geomGrafico = null;
+
   function costruisciGraficoSVG(punti) {
-    const W = 340, H = 150, PADL = 4, PADR = 4, PADT = 10, PADB = 20;
+    // larghezza reale del contenitore: così il testo non si ingrandisce sui monitor larghi
+    const W = Math.max(280, Math.round(els.chartWrap.clientWidth || 340));
+    const H = W > 600 ? 280 : 150;
+    const PADL = 4, PADR = 4, PADT = 10, PADB = 20;
+
     const tuttiValori = [];
     punti.forEach(p => { tuttiValori.push(p.totaleInvestito, p.valorePortafoglio); });
     let min = Math.min(...tuttiValori), max = Math.max(...tuttiValori);
@@ -1022,6 +1050,7 @@
 
     const xPer = (i) => PADL + (i / (punti.length - 1)) * (W - PADL - PADR);
     const yPer = (v) => PADT + (1 - (v - min) / (max - min)) * (H - PADT - PADB);
+    geomGrafico = { punti, W, H, PADL, PADR, xPer, yPer };
 
     const lineaInvestito = punti.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xPer(i).toFixed(1)} ${yPer(p.totaleInvestito).toFixed(1)}`).join(' ');
     const lineaValore = punti.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xPer(i).toFixed(1)} ${yPer(p.valorePortafoglio).toFixed(1)}`).join(' ');
@@ -1042,14 +1071,84 @@
         <path d="${lineaValore}" class="chart-linea" stroke="var(--gain)"/>
         ${puntiInvestito}
         ${puntiValore}
+        <line id="chartGuida" class="chart-guida" x1="0" x2="0" y1="${PADT}" y2="${H - PADB}"/>
+        <circle id="chartHoverI" class="chart-hover" r="5" fill="var(--gold)"/>
+        <circle id="chartHoverV" class="chart-hover" r="5" fill="var(--gain)"/>
         <text class="chart-asse-testo" x="${PADL}" y="${H - 4}">${primaData}</text>
         <text class="chart-asse-testo" x="${W - PADR}" y="${H - 4}" text-anchor="end">${ultimaData}</text>
       </svg>
+      <div class="chart-tooltip" id="chartTooltip"></div>
       <div class="chart-legenda">
         <span><span class="dot" style="background:var(--gold)"></span>Investito</span>
         <span><span class="dot" style="background:var(--gain)"></span>Valore reale</span>
       </div>`;
   }
+
+  function mostraTooltipGrafico(e) {
+    const g = geomGrafico;
+    const svg = els.chartWrap.querySelector('svg');
+    const tip = document.getElementById('chartTooltip');
+    if (!g || !svg || !tip) return;
+
+    const r = svg.getBoundingClientRect();
+    const scala = r.width / g.W;
+    const x = (e.clientX - r.left) / scala;
+    const n = g.punti.length;
+    let i = Math.round((x - g.PADL) / (g.W - g.PADL - g.PADR) * (n - 1));
+    i = Math.max(0, Math.min(n - 1, i));
+    const p = g.punti[i];
+
+    const cx = g.xPer(i);
+    const guida = document.getElementById('chartGuida');
+    guida.setAttribute('x1', cx); guida.setAttribute('x2', cx); guida.style.opacity = 1;
+    const hi = document.getElementById('chartHoverI');
+    hi.setAttribute('cx', cx); hi.setAttribute('cy', g.yPer(p.totaleInvestito)); hi.style.opacity = 1;
+    const hv = document.getElementById('chartHoverV');
+    hv.setAttribute('cx', cx); hv.setAttribute('cy', g.yPer(p.valorePortafoglio)); hv.style.opacity = 1;
+
+    const cls = p.guadagno > 0 ? 'positivo' : (p.guadagno < 0 ? 'negativo' : '');
+    const segno = p.guadagno > 0 ? '+' : '';
+    tip.innerHTML = `
+      <div class="t-data">${formatData(p.data)}</div>
+      <div class="t-riga"><span class="dot" style="background:var(--gold)"></span>Investito<b>${formatEuro(p.totaleInvestito)}</b></div>
+      <div class="t-riga"><span class="dot" style="background:var(--gain)"></span>Valore reale<b>${formatEuro(p.valorePortafoglio)}</b></div>
+      <div class="t-riga">Guadagno<b class="${cls}">${segno}${formatEuro(p.guadagno)}</b></div>`;
+
+    const px = cx * scala;
+    if (px > r.width * 0.55) {
+      tip.style.left = (px - 12) + 'px';
+      tip.style.transform = 'translateX(-100%)';
+    } else {
+      tip.style.left = (px + 12) + 'px';
+      tip.style.transform = 'none';
+    }
+    tip.classList.add('visibile');
+  }
+
+  function nascondiTooltipGrafico() {
+    const tip = document.getElementById('chartTooltip');
+    if (tip) tip.classList.remove('visibile');
+    ['chartGuida', 'chartHoverI', 'chartHoverV'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.opacity = 0;
+    });
+  }
+
+  els.chartWrap.addEventListener('pointermove', mostraTooltipGrafico);
+  els.chartWrap.addEventListener('pointerdown', mostraTooltipGrafico);
+  els.chartWrap.addEventListener('pointerleave', nascondiTooltipGrafico);
+  els.chartWrap.addEventListener('pointercancel', nascondiTooltipGrafico);
+
+  // ridisegna il grafico se cambia la larghezza della finestra
+  let timerResize = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(timerResize);
+    timerResize = setTimeout(() => {
+      if (ultimoAndamento && ultimoAndamento.length >= 2) {
+        els.chartWrap.innerHTML = costruisciGraficoSVG(ultimoAndamento);
+      }
+    }, 200);
+  });
 
   function render(riepilogo) {
     ultimoRiepilogo = riepilogo;
