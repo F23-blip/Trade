@@ -263,6 +263,13 @@
   .stato-inline.errore { color: var(--err); }
 
   input[type="file"].hidden-file { display: none; }
+ /* ---- schermi larghi (PC / tablet): pagina più ampia ---- */
+  @media (min-width: 900px) {
+    main { max-width: 960px; }
+    body { padding-top: 40px; }
+    h1 { font-size: 34px; }
+    #chartWrap svg { max-height: 360px; }
+  }
 </style>
 </head>
 <body>
