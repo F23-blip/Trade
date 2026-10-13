@@ -873,11 +873,32 @@
     INTEREST_PAYMENT: 'Interessi',
     TAX_OPTIMIZATION: 'Bolli / Imposte',
     CARD_TRANSACTION: 'Spese con carta',
-    REALIZZATO: 'P&L realizzato'
+    REALIZZATO: 'P&L realizzato (netto tasse)',
+    TASSE: 'Tasse pagate'
   };
 
-  // Card calcolata dalle posizioni chiuse: risultato = -(investito netto).
-  function costruisciCardRealizzato() {
+  // Card P&L realizzato: usa il dettaglio fiscale del server (netto tasse);
+  // se non c'è (cache vecchia) ripiega sul calcolo lordo dalle posizioni chiuse.
+  function costruisciCardRealizzato(fiscale) {
+    const re = fiscale && fiscale.realizzato;
+    if (re && Array.isArray(re.posizioni) && re.posizioni.length) {
+      const sintesi = [
+        { data: '', importo: re.plusvalenze, descrizione: '▸ Plusvalenze lorde' },
+        { data: '', importo: re.minusvalenze, descrizione: '▸ Minusvalenze' },
+        { data: '', importo: re.tasse, descrizione: '▸ Tasse pagate' }
+      ];
+      return {
+        tipo: 'REALIZZATO',
+        unita: 'pos. chiuse',
+        conteggio: re.posizioni.length,
+        totale: re.netto,
+        operazioni: sintesi.concat(re.posizioni.map(p => ({
+          data: p.data,
+          importo: p.netto,
+          descrizione: p.strumento + (p.tasse ? ' (tasse ' + formatEuro(p.tasse) + ')' : '')
+        })))
+      };
+    }
     const chiuse = ((ultimoRiepilogo && ultimoRiepilogo.righe) || []).filter(r => r.chiusa);
     if (!chiuse.length) return null;
     return {
@@ -895,11 +916,32 @@
     };
   }
 
-  function renderMovimenti(movimenti) {
-    const realizzato = costruisciCardRealizzato();
+  // Card Tasse pagate: totali per categoria e, sotto ognuna, le singole operazioni.
+  function costruisciCardTasse(fiscale) {
+    if (!fiscale || !Array.isArray(fiscale.voci)) return null;
+    const voci = fiscale.voci.filter(v => v.conteggio > 0);
+    if (!voci.length) return null;
+    const operazioni = [];
+    voci.forEach(v => {
+      operazioni.push({ data: '', importo: v.totale, descrizione: '▸ ' + v.etichetta + ' (' + v.conteggio + ')' });
+      (v.operazioni || []).forEach(o => operazioni.push(o));
+    });
+    return {
+      tipo: 'TASSE',
+      unita: 'prelievi',
+      conteggio: voci.reduce((s, v) => s + v.conteggio, 0),
+      totale: fiscale.totaleTasse,
+      operazioni: operazioni
+    };
+  }
+
+  function renderMovimenti(movimenti, fiscale) {
+    const realizzato = costruisciCardRealizzato(fiscale);
+    const cardTasse = costruisciCardTasse(fiscale);
     const lista = (Array.isArray(movimenti) ? movimenti : [])
       .filter(m => m.tipo !== 'CARD_ORDERING_FEE')
-      .concat(realizzato ? [realizzato] : []);
+      .concat(realizzato ? [realizzato] : [])
+      .concat(cardTasse ? [cardTasse] : []);
 
     if (lista.filter(m => m.conteggio > 0).length === 0) {
       els.movimentiWrap.style.display = 'none';
@@ -1018,9 +1060,9 @@
       if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
       nascondiStato();
       render(risp.riepilogo);
-      renderMovimenti(risp.movimentiCash);
+      renderMovimenti(risp.movimentiCash, risp.fiscale);
       renderAndamento(risp.andamento);
-      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento, risp.fiscale);
     } catch (err) {
       mostraStato(String(err.message || err), 'errore');
     }
@@ -1180,7 +1222,9 @@
     righe.forEach((r) => {
       // ---- posizione chiusa: mostra il risultato realizzato, niente barra/percentuale ----
       if (r.chiusa) {
-        const risultato = -(Number(r.investito) || 0);
+        const lordo = -(Number(r.investito) || 0);
+        const tasseRiga = Number(r.tasse) || 0;
+        const risultato = lordo + tasseRiga;
         const cls = risultato > 0 ? 'positivo' : (risultato < 0 ? 'negativo' : '');
         const liC = document.createElement('li');
         liC.className = 'cliccabile';
@@ -1200,7 +1244,7 @@
               <span class="investito ${cls}">${risultato > 0 ? '+' : ''}${formatEuro(risultato)}</span>
             </div>
           </div>
-          <div class="riga-meta">${r.nOp || 0} op · risultato realizzato</div>
+          <div class="riga-meta">${r.nOp || 0} op · ${tasseRiga ? 'lordo ' + formatEuro(lordo) + ' · tasse ' + formatEuro(tasseRiga) : 'risultato realizzato'}</div>
           <div class="dettagli"><div class="dettagli-inner"><ul>${renderOperazioni(Array.isArray(r.operazioni) ? r.operazioni : [])}</ul></div></div>
         `;
         liC.addEventListener('click', () => toggleRiga(liC));
@@ -1310,9 +1354,9 @@
     return res.json();
   }
 
-  function salvaCache(riepilogo, movimentiCash, andamento) {
+  function salvaCache(riepilogo, movimentiCash, andamento, fiscale) {
     try {
-      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, movimentiCash, andamento, ts: Date.now() }));
+      localStorage.setItem(LS_CACHE, JSON.stringify({ riepilogo, movimentiCash, andamento, fiscale, ts: Date.now() }));
     } catch (err) { /* storage pieno o non disponibile: non blocca nulla */ }
   }
 
@@ -1335,9 +1379,9 @@
       }
       nascondiStato();
       render(risp.riepilogo);
-      renderMovimenti(risp.movimentiCash);
+      renderMovimenti(risp.movimentiCash, risp.fiscale);
       renderAndamento(risp.andamento);
-      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento, risp.fiscale);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       // In sottofondo non mostriamo errore: resta visibile quanto già in cache.
@@ -1357,9 +1401,9 @@
       const n = risp.righe || 0;
       mostraStato(n > 0 ? `Importate ${n} righe nuove.` : 'Nessuna riga nuova: già tutto aggiornato.', 'ok');
       render(risp.riepilogo);
-      renderMovimenti(risp.movimentiCash);
+      renderMovimenti(risp.movimentiCash, risp.fiscale);
       renderAndamento(risp.andamento);
-      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento, risp.fiscale);
       els.sottotitolo.textContent = 'Aggiornato ora';
     } catch (err) {
       mostraStato(String(err.message || err), 'errore');
@@ -1388,9 +1432,9 @@
       if (risp.error) { mostraStato('Errore: ' + risp.error, 'errore'); return; }
       mostraStato('Valore salvato.', 'ok');
       render(risp.riepilogo);
-      renderMovimenti(risp.movimentiCash);
+      renderMovimenti(risp.movimentiCash, risp.fiscale);
       renderAndamento(risp.andamento);
-      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento);
+      salvaCache(risp.riepilogo, risp.movimentiCash, risp.andamento, risp.fiscale);
       els.snapshotForm.style.display = 'none';
       els.snapshotInput.value = '';
     } catch (err) {
@@ -1409,7 +1453,7 @@
     const cache = leggiCache();
     if (cache && cache.riepilogo) {
       render(cache.riepilogo);
-      renderMovimenti(cache.movimentiCash);
+      renderMovimenti(cache.movimentiCash, cache.fiscale);
       renderAndamento(cache.andamento);
       const minutiFa = Math.round((Date.now() - cache.ts) / 60000);
       els.sottotitolo.textContent = minutiFa < 1 ? 'Aggiornato ora' : `Aggiornato ${minutiFa} min fa`;
